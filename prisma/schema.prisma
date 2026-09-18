@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Photo {
+  id            String    @id @default(cuid())
+  url           String
+  thumbnailUrl  String
+  type          MediaType
+  uploaderName  String?
+  likeCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  likes         Like[]
+
+  @@index([likeCount])
+  @@index([createdAt])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  photoId   String
+  deviceId  String
+  createdAt DateTime @default(now())
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, deviceId])
+  @@index([photoId])
+}

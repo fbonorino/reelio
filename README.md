@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reelio — Live Party Photo Sharing & Voting
 
-## Getting Started
+Guests scan a QR code, upload photos/videos with no login, watch them appear live in a
+shared feed, and like their favorites. The most-liked photo at the end of the night wins.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Next.js 14+ (App Router) + TypeScript
+- Tailwind CSS + shadcn/ui
+- Prisma + SQLite (metadata: photos, likes)
+- Cloudinary (media storage/delivery, unsigned direct-from-browser uploads)
+- SWR (polling-based live feed), sonner (toasts), lucide-react (icons)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies (already done if you're reading this after scaffold):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. **Create a Cloudinary account** (free tier is plenty for one event) at
+   https://cloudinary.com and grab your Cloud Name, API Key, and API Secret from the
+   dashboard.
 
-To learn more about Next.js, take a look at the following resources:
+3. **Create an unsigned upload preset** (required so guest browsers can upload directly
+   to Cloudinary without a signed request):
+   - Cloudinary Dashboard → Settings → Upload → Upload presets → Add upload preset
+   - Set **Signing Mode** to `Unsigned`
+   - Optionally restrict allowed formats / set a folder name
+   - Save and copy the preset name
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Fill in `.env`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   DATABASE_URL="file:./dev.db"
 
-## Deploy on Vercel
+   CLOUDINARY_CLOUD_NAME="your-cloud-name"
+   CLOUDINARY_API_KEY="your-api-key"
+   CLOUDINARY_API_SECRET="your-api-secret"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="your-unsigned-preset-name"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   NEXT_PUBLIC_EVENT_NAME="Jane & Sam's Wedding"
+   HOST_SECRET="pick-a-long-random-string"
+   ```
+
+5. Run migrations and start the dev server:
+
+   ```bash
+   npm run db:migrate
+   npm run dev
+   ```
+
+## Pages
+
+- `/` — the guest-facing app: upload button, live feed (polls every 4s), "Top photos"
+  leaderboard tab, tap-to-open lightbox, like/unlike with device-based dedup
+  (no login — a random ID is stored in `localStorage`).
+- `/host?key=YOUR_HOST_SECRET` — hidden moderation view with a delete button on every
+  photo. Share this link only with yourself/co-hosts.
+
+## Deploying for the night of
+
+- Deploy to Vercel (or any Next.js host) and point a QR code at the production URL.
+- SQLite is fine for a single-event, single-instance deployment — if you deploy to a
+  platform with an ephemeral filesystem (like Vercel's default), swap `DATABASE_URL`
+  for a hosted Postgres/SQLite-compatible database (e.g. Turso, Neon) before the event
+  so photo metadata survives redeploys/restarts. Cloudinary media itself is durable
+  regardless.
