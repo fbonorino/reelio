@@ -25,7 +25,7 @@ export function PhotoCard({
       )}
     >
       {isWinner && (
-        <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-amber-400 px-2 py-1 text-xs font-bold text-zinc-950">
+        <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-amber-400 px-2 py-1 font-marker text-xs text-zinc-950">
           <Trophy className="size-3.5" />
           Winning
         </div>

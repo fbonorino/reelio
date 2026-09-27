@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { uploadToCloudinary } from "@/lib/cloudinary-client";
+import { fireConfetti } from "@/lib/confetti";
 
 export function UploadFlow({ onUploaded }: { onUploaded: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +52,7 @@ export function UploadFlow({ onUploaded }: { onUploaded: () => void }) {
       if (!res.ok) throw new Error("Failed to save photo");
 
       toast.success("Shared to the party feed!");
+      fireConfetti();
       onUploaded();
       reset();
     } catch (err) {

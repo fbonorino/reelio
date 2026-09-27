@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950">
       <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 px-4 pb-3 pt-4 backdrop-blur">
-        <h1 className="mb-3 text-center text-lg font-bold tracking-tight text-zinc-50">
+        <h1 className="mb-3 text-center font-display text-2xl uppercase tracking-wide text-zinc-50">
           {eventName}
         </h1>
         <Tabs value={tab} onValueChange={(v) => setTab(v as "new" | "top")}>
