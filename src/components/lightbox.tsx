@@ -4,16 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart, X } from "lucide-react";
 import type { Photo } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  ChallengeLabel,
+  InstagramLink,
+  InvalidatedBadge,
+  PointsChip,
+} from "@/components/photo-meta";
 
 export function Lightbox({
   photos,
   index,
+  myInstagram,
   onClose,
   onIndexChange,
   onLike,
 }: {
   photos: Photo[];
   index: number;
+  myInstagram: string | null | undefined;
   onClose: () => void;
   onIndexChange: (index: number) => void;
   onLike: (photoId: string) => void;
@@ -59,9 +67,16 @@ export function Lightbox({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
-      <div className="flex items-center justify-between p-4">
-        <span className="text-sm text-zinc-300">{photo.uploaderName || "Anonymous"}</span>
-        <button onClick={onClose} aria-label="Close" className="rounded-full p-1 text-zinc-300">
+      <div className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2">
+            <InstagramLink handle={photo.instagram} className="text-sm" />
+            <PointsChip photo={photo} />
+          </div>
+          <ChallengeLabel photo={photo} className="text-sm" />
+          {photo.invalidated && <InvalidatedBadge />}
+        </div>
+        <button onClick={onClose} aria-label="Cerrar" className="shrink-0 rounded-full p-1 text-zinc-300">
           <X className="size-6" />
         </button>
       </div>
@@ -103,7 +118,7 @@ export function Lightbox({
           <img
             key={photo.id}
             src={photo.url}
-            alt={photo.uploaderName ? `Photo by ${photo.uploaderName}` : "Party photo"}
+            alt={`Foto de @${photo.instagram}`}
             className="max-h-full max-w-full object-contain"
           />
         )}
@@ -112,7 +127,8 @@ export function Lightbox({
       <div className="flex items-center justify-center gap-2 p-5">
         <button
           onClick={() => onLike(photo.id)}
-          className="flex items-center gap-2 rounded-full bg-zinc-800 px-4 py-2 text-base font-medium"
+          disabled={photo.instagram === myInstagram}
+          className="flex items-center gap-2 rounded-full bg-zinc-800 px-4 py-2 text-base font-medium disabled:opacity-60"
         >
           <Heart
             className={cn(

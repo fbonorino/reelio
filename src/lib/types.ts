@@ -5,8 +5,18 @@ export type Photo = {
   url: string;
   thumbnailUrl: string;
   type: MediaType;
-  uploaderName: string | null;
+  instagram: string;
+  challengeId: string;
+  challengePoints: number;
+  invalidated: boolean;
   likeCount: number;
   createdAt: string;
   likedByMe: boolean;
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  instagram: string;
+  score: number;
+  photoCount: number;
 };

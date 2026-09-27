@@ -13,17 +13,25 @@ enum MediaType {
 }
 
 model Photo {
-  id            String    @id @default(cuid())
-  url           String
-  thumbnailUrl  String
-  type          MediaType
-  uploaderName  String?
-  likeCount     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  likes         Like[]
+  id              String    @id @default(cuid())
+  url             String
+  thumbnailUrl    String
+  type            MediaType
+  /// Normalized Instagram handle (lowercase, no "@") of the uploader.
+  instagram       String
+  /// Challenge id from src/lib/challenges.ts.
+  challengeId     String
+  /// Points snapshot at upload time, so editing the list later doesn't rewrite history.
+  challengePoints Int
+  /// Set by the host when the photo doesn't meet its challenge: its challenge points stop counting.
+  invalidated     Boolean   @default(false)
+  likeCount       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  likes           Like[]
 
   @@index([likeCount])
   @@index([createdAt])
+  @@index([instagram])
 }
 
 model Like {

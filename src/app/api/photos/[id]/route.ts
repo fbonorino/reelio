@@ -7,12 +7,39 @@ function extractPublicId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+function isHost(request: NextRequest) {
+  const key = request.nextUrl.searchParams.get("key");
+  return !!process.env.HOST_SECRET && key === process.env.HOST_SECRET;
+}
+
+/** Host-only: `{ invalidated: boolean }` — invalidating removes the photo's challenge points from its owner's score. */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!isHost(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { invalidated } = await request.json();
+  if (typeof invalidated !== "boolean") {
+    return NextResponse.json({ error: "Missing invalidated flag" }, { status: 400 });
+  }
+
+  const { id } = await params;
+  try {
+    const photo = await prisma.photo.update({ where: { id }, data: { invalidated } });
+    return NextResponse.json({ photo });
+  } catch {
+    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const key = request.nextUrl.searchParams.get("key");
-  if (!process.env.HOST_SECRET || key !== process.env.HOST_SECRET) {
+  if (!isHost(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeInstagram } from "@/lib/instagram";
+import { hasEventEnded } from "@/lib/event";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -7,6 +9,21 @@ export async function POST(request: NextRequest) {
 
   if (!photoId || !deviceId) {
     return NextResponse.json({ error: "Missing photoId or deviceId" }, { status: 400 });
+  }
+  if (hasEventEnded()) {
+    return NextResponse.json({ error: "El juego ya terminó" }, { status: 403 });
+  }
+
+  // Likes are worth points to the uploader, so you can't like your own photos.
+  const photoOwner = await prisma.photo.findUnique({
+    where: { id: photoId },
+    select: { instagram: true },
+  });
+  if (!photoOwner) {
+    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+  }
+  if (photoOwner.instagram === normalizeInstagram(body.instagram)) {
+    return NextResponse.json({ error: "No podés likear tus propias fotos" }, { status: 403 });
   }
 
   const existingLike = await prisma.like.findUnique({

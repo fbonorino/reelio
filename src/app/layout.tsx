@@ -23,8 +23,8 @@ const permanentMarker = Permanent_Marker({
 const eventName = process.env.NEXT_PUBLIC_EVENT_NAME || "The Party";
 
 export const metadata: Metadata = {
-  title: `${eventName} — Live Photos`,
-  description: "Share and vote on live photos from the party.",
+  title: `${eventName} — Consignas en vivo`,
+  description: "Cumplí consignas, subí tus fotos y sumá puntos en vivo.",
 };
 
 export const viewport: Viewport = {
@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${spaceGrotesk.variable} ${anton.variable} ${permanentMarker.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
