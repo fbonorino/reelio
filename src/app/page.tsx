@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSWRConfig } from "swr";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Feed } from "@/components/feed";
-import { UploadFlow } from "@/components/upload-flow";
+import { UploadFlow, type UploadFlowHandle } from "@/components/upload-flow";
 import { Leaderboard } from "@/components/leaderboard";
 import { Countdown } from "@/components/countdown";
 import { Onboarding } from "@/components/onboarding";
+import { InfoRail } from "@/components/info-rail";
+import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { WinnerBanner } from "@/components/winner-banner";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { usePhotos } from "@/hooks/use-photos";
@@ -27,6 +29,8 @@ export default function Home() {
   // Same SWR key as the "new" feed, so this doesn't add a second poll.
   const { photos } = usePhotos("new", deviceId);
   const photosUsed = instagram ? photos.filter((p) => p.instagram === instagram).length : 0;
+  const canUpload = !!instagram && !ended && photosUsed < MAX_PHOTOS_PER_USER;
+  const uploadRef = useRef<UploadFlowHandle>(null);
 
   function refreshFeeds() {
     mutate(
@@ -57,7 +61,15 @@ export default function Home() {
         {tab === "ranking" ? <Leaderboard /> : <Feed sort={tab} />}
       </main>
 
-      <UploadFlow instagram={instagram} photosUsed={photosUsed} onUploaded={refreshFeeds} />
+      <UploadFlow
+        ref={uploadRef}
+        instagram={instagram}
+        photosUsed={photosUsed}
+        onUploaded={refreshFeeds}
+      />
+      <InfoRail
+        onPickChallenge={canUpload ? (id) => uploadRef.current?.start(id) : undefined}
+      />
       <Onboarding open={instagram === null} />
     </div>
   );

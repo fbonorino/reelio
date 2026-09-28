@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useImperativeHandle, useRef, useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,21 @@ import { fireConfetti } from "@/lib/confetti";
 import { CHALLENGES, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { hasEventEnded } from "@/lib/event";
 
+export type UploadFlowHandle = {
+  /** Opens the file picker with `challengeId` preselected. Call from a click handler. */
+  start: (challengeId: string) => void;
+};
+
 export function UploadFlow({
   instagram,
   photosUsed,
   onUploaded,
+  ref,
 }: {
   instagram: string | null | undefined;
   photosUsed: number;
   onUploaded: () => void;
+  ref?: React.Ref<UploadFlowHandle>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -42,13 +49,16 @@ export function UploadFlow({
     setPreviewUrl(URL.createObjectURL(selected));
   }
 
-  function openPicker() {
+  function openPicker(preselectedId = "") {
     if (hasEventEnded()) {
       toast.error("El juego ya terminó, no se pueden subir más fotos");
       return;
     }
+    setChallengeId(preselectedId);
     inputRef.current?.click();
   }
+
+  useImperativeHandle(ref, () => ({ start: openPicker }));
 
   function reset() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -101,7 +111,7 @@ export function UploadFlow({
       <div className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1.5">
         <Button
           size="lg"
-          onClick={openPicker}
+          onClick={() => openPicker()}
           disabled={!instagram || limitReached}
           className="rounded-full bg-indigo-600 px-6 py-6 text-base font-semibold text-white shadow-lg shadow-indigo-950/50 hover:bg-indigo-500 disabled:bg-zinc-800 disabled:text-zinc-400 disabled:opacity-100"
         >

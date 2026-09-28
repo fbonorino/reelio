@@ -12,29 +12,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
-import { getEventEnd } from "@/lib/event";
+import { ChallengeList } from "@/components/challenge-list";
+import { GameRules } from "@/components/game-rules";
 import { normalizeInstagram } from "@/lib/instagram";
 import { saveInstagram } from "@/lib/profile";
 
-function endTimeLabel() {
-  const end = getEventEnd();
-  if (!end) return "el final de la noche";
-  return `las ${end.toLocaleTimeString("es-AR", { hour: "numeric", minute: "2-digit" })}`;
+const INTRO_SEEN_KEY = "reelio_intro_seen";
+
+function readIntroSeen() {
+  try {
+    return localStorage.getItem(INTRO_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
-const RULES = [
-  { emoji: "⏰", text: `Tenés hasta ${endTimeLabel()} para sumar puntos. Después se cierra el juego.` },
-  { emoji: "📸", text: "Elegí una consigna, cumplila y subí la foto que lo demuestre. Cada consigna suma puntos." },
-  { emoji: "🖐️", text: `Tenés ${MAX_PHOTOS_PER_USER} fotos en total — pensá bien en qué consignas las gastás.` },
-  { emoji: "❤️", text: "Cada like que te den los demás en tus fotos es +1 punto extra." },
-  { emoji: "🕵️", text: "Si la foto no cumple la consigna que elegiste, perdés esos puntos... y tenés que tomar un shot 🍻" },
-  { emoji: "🏆", text: "El que más puntos tenga al final de la noche se lleva un premio. Tranquilo, NO es un beso con el cumpleañero." },
-];
+function markIntroSeen() {
+  try {
+    localStorage.setItem(INTRO_SEEN_KEY, "1");
+  } catch {
+    // Private mode — they'll just see the intro again next time.
+  }
+}
 
-/** Blocking first-run flow: rules, then Instagram handle. Renders nothing once a handle is saved. */
+type Step = "rules" | "challenges" | "handle";
+
+/**
+ * Blocking first-run flow: rules, challenges, then Instagram handle. The first two steps
+ * are skipped once seen. Renders nothing once a handle is saved.
+ */
 export function Onboarding({ open }: { open: boolean }) {
-  const [step, setStep] = useState<"rules" | "handle">("rules");
+  const [step, setStep] = useState<Step>(() => (readIntroSeen() ? "handle" : "rules"));
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -66,20 +74,44 @@ export function Onboarding({ open }: { open: boolean }) {
                 Leé esto antes de arrancar, que después no hay reclamos.
               </DialogDescription>
             </DialogHeader>
-            <ul className="space-y-3 text-sm text-zinc-200">
-              {RULES.map((rule) => (
-                <li key={rule.emoji} className="flex gap-3">
-                  <span className="text-lg leading-5">{rule.emoji}</span>
-                  <span>{rule.text}</span>
-                </li>
-              ))}
-            </ul>
+            <GameRules />
             <DialogFooter>
               <Button
-                onClick={() => setStep("handle")}
+                onClick={() => setStep("challenges")}
                 className="w-full bg-indigo-600 hover:bg-indigo-500"
               >
-                Dale, entendido
+                Siguiente
+              </Button>
+            </DialogFooter>
+          </>
+        ) : step === "challenges" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl uppercase tracking-wide">
+                Las consignas
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400">
+                Andá pensando cuáles vas a hacer. Las tenés siempre a mano en la barra de la derecha.
+              </DialogDescription>
+            </DialogHeader>
+            <ChallengeList />
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStep("rules")}
+                className="text-zinc-400"
+              >
+                Volver
+              </Button>
+              <Button
+                onClick={() => {
+                  markIntroSeen();
+                  setStep("handle");
+                }}
+                className="bg-indigo-600 hover:bg-indigo-500"
+              >
+                Siguiente
               </Button>
             </DialogFooter>
           </>
@@ -115,7 +147,7 @@ export function Onboarding({ open }: { open: boolean }) {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setStep("rules")}
+                onClick={() => setStep("challenges")}
                 className="text-zinc-400"
               >
                 Volver

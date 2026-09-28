@@ -18,17 +18,31 @@ export function InstagramLink({ handle, className }: { handle: string; className
   );
 }
 
-export function PointsChip({ photo, className }: { photo: Photo; className?: string }) {
+export function PointsBadge({
+  points,
+  struck,
+  className,
+}: {
+  points: number;
+  struck?: boolean;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
         "rounded-full bg-amber-400 px-2 py-0.5 font-display text-sm tracking-wide text-zinc-950",
-        photo.invalidated && "bg-zinc-700 text-zinc-400 line-through",
+        struck && "bg-zinc-700 text-zinc-400 line-through",
         className
       )}
     >
-      +{photo.challengePoints}
+      +{points}
     </span>
+  );
+}
+
+export function PointsChip({ photo, className }: { photo: Photo; className?: string }) {
+  return (
+    <PointsBadge points={photo.challengePoints} struck={photo.invalidated} className={className} />
   );
 }
 
