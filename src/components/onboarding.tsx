@@ -25,11 +25,11 @@ function endTimeLabel() {
 
 const RULES = [
   { emoji: "⏰", text: `Tenés hasta ${endTimeLabel()} para sumar puntos. Después se cierra el juego.` },
-  { emoji: "📸", text: "Elegí una consigna, cumplila y subí la foto que lo demuestre. Cada consigna suma los puntos que dice." },
+  { emoji: "📸", text: "Elegí una consigna, cumplila y subí la foto que lo demuestre. Cada consigna suma puntos." },
   { emoji: "🖐️", text: `Tenés ${MAX_PHOTOS_PER_USER} fotos en total — pensá bien en qué consignas las gastás.` },
   { emoji: "❤️", text: "Cada like que te den los demás en tus fotos es +1 punto extra." },
-  { emoji: "🕵️", text: "El staff revisa todo. Si la foto no cumple la consigna que elegiste, perdés esos puntos… y te comés un shot de penitencia 🍻" },
-  { emoji: "🏆", text: "El que más puntos tenga al final de la noche se lleva un premio." },
+  { emoji: "🕵️", text: "Si la foto no cumple la consigna que elegiste, perdés esos puntos... y tenés que tomar un shot 🍻" },
+  { emoji: "🏆", text: "El que más puntos tenga al final de la noche se lleva un premio. Tranquilo, NO es un beso con el cumpleañero." },
 ];
 
 /** Blocking first-run flow: rules, then Instagram handle. Renders nothing once a handle is saved. */

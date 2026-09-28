@@ -8,6 +8,8 @@ import { UploadFlow } from "@/components/upload-flow";
 import { Leaderboard } from "@/components/leaderboard";
 import { Countdown } from "@/components/countdown";
 import { Onboarding } from "@/components/onboarding";
+import { WinnerBanner } from "@/components/winner-banner";
+import { useEventEnded } from "@/hooks/use-event-ended";
 import { usePhotos } from "@/hooks/use-photos";
 import { getDeviceId } from "@/lib/device-id";
 import { useInstagram } from "@/lib/profile";
@@ -21,6 +23,7 @@ export default function Home() {
   const { mutate } = useSWRConfig();
   const instagram = useInstagram();
   const [deviceId] = useState(() => getDeviceId());
+  const ended = useEventEnded();
   // Same SWR key as the "new" feed, so this doesn't add a second poll.
   const { photos } = usePhotos("new", deviceId);
   const photosUsed = instagram ? photos.filter((p) => p.instagram === instagram).length : 0;
@@ -40,6 +43,7 @@ export default function Home() {
           {eventName}
         </h1>
         <Countdown />
+        {ended && <WinnerBanner />}
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList className="grid w-full grid-cols-3 bg-zinc-900">
             <TabsTrigger value="new">En vivo</TabsTrigger>

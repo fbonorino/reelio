@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
+import { useEventEnded } from "@/hooks/use-event-ended";
 import { getEventEnd } from "@/lib/event";
 
 const eventEnd = getEventEnd();
@@ -15,6 +16,7 @@ function formatRemaining(ms: number) {
 
 export function Countdown() {
   const [now, setNow] = useState<number | null>(null);
+  const ended = useEventEnded();
 
   useEffect(() => {
     if (!eventEnd) return;
@@ -32,7 +34,7 @@ export function Countdown() {
   return (
     <div className="mb-3 flex items-center justify-center gap-1.5 text-sm font-medium">
       <Timer className="size-4 text-amber-400" />
-      {remaining > 0 ? (
+      {!ended && remaining > 0 ? (
         <span className="text-zinc-300">
           Termina en <span className="text-amber-400">{formatRemaining(remaining)}</span>
         </span>
