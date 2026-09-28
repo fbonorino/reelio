@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { normalizeInstagram } from "@/lib/instagram";
+import { normalizeInstagram, NOT_INVITED } from "@/lib/instagram";
 
 const INSTAGRAM_KEY = "reelio_instagram";
 
@@ -23,6 +23,26 @@ export function saveInstagram(handle: string) {
   }
   cachedHandle = handle;
   listeners.forEach((l) => l());
+}
+
+export function clearInstagram() {
+  try {
+    localStorage.removeItem(INSTAGRAM_KEY);
+  } catch {
+    // Ignore — the in-memory reset below is what re-opens onboarding.
+  }
+  cachedHandle = null;
+  listeners.forEach((l) => l());
+}
+
+/**
+ * Call with an API error body. If the server says the saved handle is no longer on the
+ * guest list, forgets it so onboarding asks again. Returns whether it did.
+ */
+export function forgetIfNotInvited(body: unknown) {
+  if ((body as { code?: unknown } | null)?.code !== NOT_INVITED) return false;
+  clearInstagram();
+  return true;
 }
 
 let cachedHandle: string | null | undefined;

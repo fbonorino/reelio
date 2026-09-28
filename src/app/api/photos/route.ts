@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getChallenge, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
+import { isInvited, notInvitedResponse } from "@/lib/guests";
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort");
@@ -35,7 +36,10 @@ export async function GET(request: NextRequest) {
 class LimitReachedError extends Error {}
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Faltan datos de la foto" }, { status: 400 });
+  }
   const { url, thumbnailUrl, type, challengeId } = body;
   const instagram = normalizeInstagram(body.instagram);
   const challenge = typeof challengeId === "string" ? getChallenge(challengeId) : undefined;
@@ -48,6 +52,9 @@ export async function POST(request: NextRequest) {
   }
   if (!instagram) {
     return NextResponse.json({ error: "Usuario de Instagram inválido" }, { status: 400 });
+  }
+  if (!(await isInvited(instagram))) {
+    return notInvitedResponse();
   }
   if (!challenge) {
     return NextResponse.json({ error: "Elegí una consigna" }, { status: 400 });

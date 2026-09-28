@@ -1,3 +1,6 @@
+/** Error `code` from any route that rejects a handle for not being on the guest list. */
+export const NOT_INVITED = "NOT_INVITED";
+
 const HANDLE_PATTERN = /^[a-z0-9._]{1,30}$/;
 
 /** Strips "@", spaces and a pasted profile URL, lowercases. Returns null if it isn't a valid handle. */

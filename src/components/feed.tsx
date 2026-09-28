@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ImageOff } from "lucide-react";
 import { usePhotos } from "@/hooks/use-photos";
-import { useInstagram } from "@/lib/profile";
+import { forgetIfNotInvited, useInstagram } from "@/lib/profile";
 import { PhotoCard } from "@/components/photo-card";
 import { Lightbox } from "@/components/lightbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +42,7 @@ export function Feed({ sort }: { sort: "new" | "top" }) {
       // 409: this handle already liked it (e.g. from another tab) — the refetch below shows that.
       if (!res.ok && res.status !== 409) {
         const data = await res.json().catch(() => null);
+        forgetIfNotInvited(data);
         throw new Error(data?.error);
       }
       mutate();

@@ -7,4 +7,10 @@ cloudinary.config({
   secure: true,
 });
 
+/** Public id and format of an untransformed delivery URL like `.../upload/v123/folder/abc.jpg`. */
+export function parseCloudinaryUrl(url: string): { publicId: string; format: string } | null {
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.(\w+)$/);
+  return match ? { publicId: match[1], format: match[2] } : null;
+}
+
 export default cloudinary;

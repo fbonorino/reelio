@@ -6,6 +6,8 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { Loader2, MinusCircle, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HostExport } from "@/components/host-export";
+import { HostGuests } from "@/components/host-guests";
 import {
   ChallengeLabel,
   InstagramLink,
@@ -95,6 +97,11 @@ function HostView() {
           (los likes siguen sumando); eliminar borra la foto y le devuelve el cupo.
         </p>
       </header>
+
+      <div className="grid gap-3 p-4 lg:grid-cols-2 lg:items-start">
+        <HostGuests hostKey={key} />
+        <HostExport hostKey={key} />
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-16 text-zinc-500">

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChallengeList } from "@/components/challenge-list";
 import { GameRules } from "@/components/game-rules";
-import { normalizeInstagram } from "@/lib/instagram";
+import { GuestPicker } from "@/components/guest-picker";
 import { saveInstagram } from "@/lib/profile";
 
 const INTRO_SEEN_KEY = "reelio_intro_seen";
@@ -38,22 +36,17 @@ function markIntroSeen() {
 type Step = "rules" | "challenges" | "handle";
 
 /**
- * Blocking first-run flow: rules, challenges, then Instagram handle. The first two steps
- * are skipped once seen. Renders nothing once a handle is saved.
+ * Blocking first-run flow: rules, challenges, then picking your handle from the guest list.
+ * The first two steps are skipped once seen. Reopens if the saved handle is removed from the list.
  */
 export function Onboarding({ open }: { open: boolean }) {
   const [step, setStep] = useState<Step>(() => (readIntroSeen() ? "handle" : "rules"));
-  const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  // Only ever set by picking a match from the guest list.
+  const [handle, setHandle] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const handle = normalizeInstagram(value);
-    if (!handle) {
-      setError("Ese usuario no parece válido (letras, números, puntos y guiones bajos).");
-      return;
-    }
-    saveInstagram(handle);
+    if (handle) saveInstagram(handle);
   }
 
   return (
@@ -122,27 +115,10 @@ export function Onboarding({ open }: { open: boolean }) {
                 ¿Cuál es tu Instagram?
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Va a aparecer en tus fotos y en el ranking. Lo cargás una sola vez.
+                Buscate en la lista de invitados. Va a aparecer en tus fotos y en el ranking.
               </DialogDescription>
             </DialogHeader>
-            <div className="relative">
-              <AtSign className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
-              <Input
-                autoFocus
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                placeholder="tu.usuario"
-                value={value}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  setError(null);
-                }}
-                maxLength={60}
-                className="border-zinc-700 bg-zinc-950 pl-9"
-              />
-            </div>
-            {error && <p className="text-sm text-rose-400">{error}</p>}
+            <GuestPicker value={handle} onChange={setHandle} />
             <DialogFooter className="gap-2">
               <Button
                 type="button"
@@ -154,7 +130,7 @@ export function Onboarding({ open }: { open: boolean }) {
               </Button>
               <Button
                 type="submit"
-                disabled={!value.trim()}
+                disabled={!handle}
                 className="bg-indigo-600 hover:bg-indigo-500"
               >
                 Empezar a jugar

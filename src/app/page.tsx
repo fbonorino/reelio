@@ -12,7 +12,7 @@ import { InfoRail } from "@/components/info-rail";
 import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { WinnerBanner } from "@/components/winner-banner";
 import { useEventEnded } from "@/hooks/use-event-ended";
-import { usePhotos } from "@/hooks/use-photos";
+import { useQuota } from "@/hooks/use-quota";
 import { useInstagram } from "@/lib/profile";
 
 const eventName = process.env.NEXT_PUBLIC_EVENT_NAME || "The Party";
@@ -24,9 +24,9 @@ export default function Home() {
   const { mutate } = useSWRConfig();
   const instagram = useInstagram();
   const ended = useEventEnded();
-  // Same SWR key as the "new" feed, so this doesn't add a second poll.
-  const { photos } = usePhotos("new", instagram);
-  const photosUsed = instagram ? photos.filter((p) => p.instagram === instagram).length : 0;
+  // Also revalidates the saved handle against the guest list; onboarding reopens if it was removed.
+  const quota = useQuota(instagram);
+  const photosUsed = quota?.used ?? 0;
   const canUpload = !!instagram && !ended && photosUsed < MAX_PHOTOS_PER_USER;
   const uploadRef = useRef<UploadFlowHandle>(null);
 
@@ -34,7 +34,9 @@ export default function Home() {
     mutate(
       (key) =>
         typeof key === "string" &&
-        (key.startsWith("/api/photos") || key.startsWith("/api/leaderboard"))
+        (key.startsWith("/api/photos") ||
+          key.startsWith("/api/leaderboard") ||
+          key.startsWith("/api/quota"))
     );
   }
 
@@ -68,7 +70,8 @@ export default function Home() {
       <InfoRail
         onPickChallenge={canUpload ? (id) => uploadRef.current?.start(id) : undefined}
       />
-      <Onboarding open={instagram === null} />
+      {/* Remount when it reopens (handle removed from the guest list) so it starts from a clean search. */}
+      <Onboarding key={instagram === null ? "open" : "closed"} open={instagram === null} />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary-client";
 import { fireConfetti } from "@/lib/confetti";
 import { CHALLENGES, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { hasEventEnded } from "@/lib/event";
+import { forgetIfNotInvited } from "@/lib/profile";
 
 export type UploadFlowHandle = {
   /** Opens the file picker with `challengeId` preselected. Call from a click handler. */
@@ -74,6 +75,17 @@ export function UploadFlow({
     if (!file || !challengeId || !instagram) return;
     setUploading(true);
     try {
+      // Check the guest list and quota first, so a rejected upload doesn't leave an orphan in Cloudinary.
+      const quotaRes = await fetch(`/api/quota?instagram=${encodeURIComponent(instagram)}`);
+      const quota = await quotaRes.json().catch(() => null);
+      if (!quotaRes.ok) {
+        if (forgetIfNotInvited(quota)) reset();
+        throw new Error(quota?.error ?? "No se pudo verificar tu cupo");
+      }
+      if (quota.remaining <= 0) {
+        throw new Error(`Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos`);
+      }
+
       const uploaded = await uploadToCloudinary(file, setProgress);
       const res = await fetch("/api/photos", {
         method: "POST",
@@ -81,7 +93,10 @@ export function UploadFlow({
         body: JSON.stringify({ ...uploaded, instagram, challengeId }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? "No se pudo guardar la foto");
+      if (!res.ok) {
+        if (forgetIfNotInvited(data)) reset();
+        throw new Error(data?.error ?? "No se pudo guardar la foto");
+      }
 
       const left: number = data.remaining;
       toast.success(

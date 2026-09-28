@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import cloudinary from "@/lib/cloudinary";
-
-function extractPublicId(url: string): string | null {
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
-  return match ? match[1] : null;
-}
-
-function isHost(request: NextRequest) {
-  const key = request.nextUrl.searchParams.get("key");
-  return !!process.env.HOST_SECRET && key === process.env.HOST_SECRET;
-}
+import cloudinary, { parseCloudinaryUrl } from "@/lib/cloudinary";
+import { isHost } from "@/lib/host";
 
 /** Host-only: `{ invalidated: boolean }` — invalidating removes the photo's challenge points from its owner's score. */
 export async function PATCH(
@@ -49,7 +40,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Photo not found" }, { status: 404 });
   }
 
-  const publicId = extractPublicId(photo.url);
+  const publicId = parseCloudinaryUrl(photo.url)?.publicId;
   if (publicId) {
     try {
       await cloudinary.uploader.destroy(publicId, {

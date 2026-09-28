@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
+import { isInvited, notInvitedResponse } from "@/lib/guests";
 
 type LikeRequest = { photoId: string; instagram: string };
 
@@ -17,6 +18,9 @@ async function validate(request: NextRequest): Promise<LikeRequest | NextRespons
   }
   if (!instagram) {
     return NextResponse.json({ error: "Usuario de Instagram inválido" }, { status: 400 });
+  }
+  if (!(await isInvited(instagram))) {
+    return notInvitedResponse();
   }
   if (hasEventEnded()) {
     return NextResponse.json({ error: "El juego ya terminó" }, { status: 403 });

@@ -48,3 +48,11 @@ model Like {
   @@index([photoId])
   @@index([instagram])
 }
+
+/// Guest list: only these handles can upload photos and give likes. Managed from /host.
+model AllowedHandle {
+  id        String   @id @default(cuid())
+  /// Normalized Instagram handle (lowercase, no "@"), same format as Photo.instagram.
+  handle    String   @unique
+  createdAt DateTime @default(now())
+}
