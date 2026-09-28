@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { normalizeInstagram } from "@/lib/instagram";
 
 const INSTAGRAM_KEY = "reelio_instagram";
 
@@ -8,7 +9,7 @@ const listeners = new Set<() => void>();
 
 function readInstagram(): string | null {
   try {
-    return localStorage.getItem(INSTAGRAM_KEY);
+    return normalizeInstagram(localStorage.getItem(INSTAGRAM_KEY));
   } catch {
     return null;
   }

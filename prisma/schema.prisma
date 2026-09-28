@@ -37,11 +37,14 @@ model Photo {
 model Like {
   id        String   @id @default(cuid())
   photoId   String
-  deviceId  String
+  /// Normalized Instagram handle (lowercase, no "@") of whoever gave the like.
+  instagram String
   createdAt DateTime @default(now())
 
   photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
 
-  @@unique([photoId, deviceId])
+  /// One like per handle per photo, enforced by the DB so concurrent requests can't double-count.
+  @@unique([photoId, instagram])
   @@index([photoId])
+  @@index([instagram])
 }

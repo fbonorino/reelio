@@ -4,7 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ImageOff } from "lucide-react";
 import { usePhotos } from "@/hooks/use-photos";
-import { getDeviceId } from "@/lib/device-id";
 import { useInstagram } from "@/lib/profile";
 import { PhotoCard } from "@/components/photo-card";
 import { Lightbox } from "@/components/lightbox";
@@ -12,22 +11,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Photo } from "@/lib/types";
 
 export function Feed({ sort }: { sort: "new" | "top" }) {
-  const [deviceId] = useState(() => getDeviceId());
   const myInstagram = useInstagram();
 
-  const { photos, isLoading, mutate } = usePhotos(sort, deviceId);
+  const { photos, isLoading, mutate } = usePhotos(sort, myInstagram);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   async function toggleLike(photoId: string) {
     const target = photos.find((p) => p.id === photoId);
-    if (!target || !deviceId || target.instagram === myInstagram) return;
+    if (!target || !myInstagram || target.instagram === myInstagram) return;
+    const unliking = target.likedByMe;
 
     const optimistic: Photo[] = photos.map((p) =>
       p.id === photoId
         ? {
             ...p,
-            likedByMe: !p.likedByMe,
-            likeCount: p.likeCount + (p.likedByMe ? -1 : 1),
+            likedByMe: !unliking,
+            likeCount: p.likeCount + (unliking ? -1 : 1),
           }
         : p
     );
@@ -36,11 +35,12 @@ export function Feed({ sort }: { sort: "new" | "top" }) {
 
     try {
       const res = await fetch("/api/likes", {
-        method: "POST",
+        method: unliking ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoId, deviceId, instagram: myInstagram }),
+        body: JSON.stringify({ photoId, instagram: myInstagram }),
       });
-      if (!res.ok) {
+      // 409: this handle already liked it (e.g. from another tab) — the refetch below shows that.
+      if (!res.ok && res.status !== 409) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error);
       }

@@ -13,7 +13,6 @@ import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { WinnerBanner } from "@/components/winner-banner";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { usePhotos } from "@/hooks/use-photos";
-import { getDeviceId } from "@/lib/device-id";
 import { useInstagram } from "@/lib/profile";
 
 const eventName = process.env.NEXT_PUBLIC_EVENT_NAME || "The Party";
@@ -24,10 +23,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("new");
   const { mutate } = useSWRConfig();
   const instagram = useInstagram();
-  const [deviceId] = useState(() => getDeviceId());
   const ended = useEventEnded();
   // Same SWR key as the "new" feed, so this doesn't add a second poll.
-  const { photos } = usePhotos("new", deviceId);
+  const { photos } = usePhotos("new", instagram);
   const photosUsed = instagram ? photos.filter((p) => p.instagram === instagram).length : 0;
   const canUpload = !!instagram && !ended && photosUsed < MAX_PHOTOS_PER_USER;
   const uploadRef = useRef<UploadFlowHandle>(null);

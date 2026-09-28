@@ -7,7 +7,8 @@ import { hasEventEnded } from "@/lib/event";
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort");
-  const deviceId = request.nextUrl.searchParams.get("deviceId");
+  // Whose likes to mark as `likedByMe`. Identity is the normalized handle, not the device.
+  const viewer = normalizeInstagram(request.nextUrl.searchParams.get("instagram"));
 
   const photos = await prisma.photo.findMany({
     orderBy:
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
   });
 
   let likedPhotoIds = new Set<string>();
-  if (deviceId) {
+  if (viewer) {
     const likes = await prisma.like.findMany({
-      where: { deviceId, photoId: { in: photos.map((p) => p.id) } },
+      where: { instagram: viewer, photoId: { in: photos.map((p) => p.id) } },
       select: { photoId: true },
     });
     likedPhotoIds = new Set(likes.map((l) => l.photoId));

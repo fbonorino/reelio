@@ -5,10 +5,11 @@ import type { Photo } from "@/lib/types";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export function usePhotos(sort: "new" | "top", deviceId: string) {
+/** `instagram` is the viewer's handle, used by the server to fill in `likedByMe`. */
+export function usePhotos(sort: "new" | "top", instagram: string | null | undefined) {
   const params = new URLSearchParams();
   if (sort === "top") params.set("sort", "top");
-  if (deviceId) params.set("deviceId", deviceId);
+  if (instagram) params.set("instagram", instagram);
 
   const { data, error, isLoading, mutate } = useSWR<{ photos: Photo[] }>(
     `/api/photos?${params.toString()}`,
