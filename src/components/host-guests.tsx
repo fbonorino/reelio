@@ -79,7 +79,7 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
   }
 
   return (
-    <section className="grid gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
+    <section className="grid min-w-0 gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-semibold text-zinc-50">
           <Users className="size-4" />
@@ -103,7 +103,11 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
           spellCheck={false}
           className="min-h-24 border-zinc-700 bg-zinc-950"
         />
-        <Button type="submit" disabled={adding || !text.trim()} className="bg-indigo-600 hover:bg-indigo-500">
+        <Button
+          type="submit"
+          disabled={adding || !text.trim()}
+          className="h-11 bg-indigo-600 hover:bg-indigo-500 sm:h-8"
+        >
           {adding ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
           Agregar a la lista
         </Button>
@@ -118,19 +122,22 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="border-zinc-700 bg-zinc-950"
+            className="h-11 border-zinc-700 bg-zinc-950 sm:h-8"
           />
           <ul className="max-h-80 divide-y divide-zinc-800 overflow-y-auto rounded-md ring-1 ring-zinc-800">
             {visible.map((guest) => (
-              <li key={guest.handle} className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm">
-                <span className="truncate text-zinc-200">@{guest.handle}</span>
+              <li
+                key={guest.handle}
+                className="flex items-center justify-between gap-2 py-0.5 pl-3 pr-1 text-base sm:py-1.5 sm:pr-3 sm:text-sm"
+              >
+                <span className="min-w-0 truncate text-zinc-200">@{guest.handle}</span>
                 <Button
                   size="icon-sm"
                   variant="ghost"
                   aria-label={`Sacar a @${guest.handle}`}
                   disabled={removing === guest.handle}
                   onClick={() => handleRemove(guest.handle)}
-                  className="text-zinc-500 hover:text-rose-400"
+                  className="size-11 text-zinc-500 hover:text-rose-400 sm:size-7"
                 >
                   {removing === guest.handle ? (
                     <Loader2 className="size-4 animate-spin" />

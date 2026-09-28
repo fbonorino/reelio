@@ -39,10 +39,13 @@ function HostView() {
     { refreshInterval: 5000 }
   );
 
-  async function handleDelete(id: string) {
-    setDeletingId(id);
+  async function handleDelete(photo: Photo) {
+    if (!confirm(`¿Eliminar la foto de @${photo.instagram}? Se borra para siempre y le devuelve el cupo.`)) {
+      return;
+    }
+    setDeletingId(photo.id);
     try {
-      const res = await fetch(`/api/photos/${id}?key=${encodeURIComponent(key)}`, {
+      const res = await fetch(`/api/photos/${photo.id}?key=${encodeURIComponent(key)}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();
@@ -89,8 +92,9 @@ function HostView() {
   const photos = data?.photos ?? [];
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-12">
-      <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950/90 px-4 py-4 backdrop-blur">
+    <div className="min-h-screen overflow-x-clip bg-zinc-950 pb-[calc(3rem+env(safe-area-inset-bottom))]">
+      {/* On phones the long description would eat a third of the screen if sticky, so it only sticks from sm up. */}
+      <header className="z-10 border-b border-zinc-800 bg-zinc-950/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur sm:sticky sm:top-0">
         <h1 className="text-lg font-bold text-zinc-50">Panel de host</h1>
         <p className="text-sm text-zinc-500">
           Revisá que cada foto cumpla su consigna. Descontar puntos saca los puntos de la consigna
@@ -98,7 +102,7 @@ function HostView() {
         </p>
       </header>
 
-      <div className="grid gap-3 p-4 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-2 lg:items-start">
         <HostGuests hostKey={key} />
         <HostExport hostKey={key} />
       </div>
@@ -110,12 +114,12 @@ function HostView() {
       ) : photos.length === 0 ? (
         <p className="px-4 py-16 text-center text-zinc-500">Todavía no hay fotos.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {photos.map((photo) => (
             <div
               key={photo.id}
               className={cn(
-                "flex flex-col overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-zinc-800",
+                "flex min-w-0 flex-col overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-zinc-800",
                 photo.invalidated && "ring-2 ring-rose-600"
               )}
             >
@@ -128,16 +132,20 @@ function HostView() {
                 )}
                 <PointsChip photo={photo} className="absolute right-2 top-2" />
               </a>
-              <div className="flex flex-1 flex-col gap-2 p-2 text-xs text-zinc-400">
-                <InstagramLink handle={photo.instagram} className="text-xs" />
-                <ChallengeLabel photo={photo} />
+              <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 text-sm text-zinc-400 sm:p-2 sm:text-xs">
+                <InstagramLink
+                  handle={photo.instagram}
+                  className="-my-3 max-w-full self-start py-3 text-sm sm:my-0 sm:self-auto sm:py-0 sm:text-xs"
+                />
+                <ChallengeLabel photo={photo} className="text-sm leading-snug sm:text-xs" />
                 {photo.invalidated && <InvalidatedBadge className="self-start" />}
                 <span>{photo.likeCount} likes</span>
-                <div className="mt-auto flex gap-2">
+                {/* Wide gap on phones so a thumb aimed at Descontar never lands on Eliminar. */}
+                <div className="mt-auto flex flex-wrap gap-4 pt-1 sm:flex-nowrap sm:gap-2 sm:pt-0">
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="flex-1"
+                    className="h-11 min-w-36 flex-1 text-sm sm:h-7 sm:min-w-0 sm:text-[0.8rem]"
                     disabled={togglingId === photo.id}
                     onClick={() => handleToggleInvalidated(photo)}
                   >
@@ -159,13 +167,17 @@ function HostView() {
                     size="sm"
                     variant="destructive"
                     aria-label="Eliminar"
+                    className="h-11 px-4 text-sm sm:h-7 sm:px-2.5 sm:text-[0.8rem]"
                     disabled={deletingId === photo.id}
-                    onClick={() => handleDelete(photo.id)}
+                    onClick={() => handleDelete(photo)}
                   >
                     {deletingId === photo.id ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
-                      <Trash2 className="size-4" />
+                      <>
+                        <Trash2 className="size-4" />
+                        <span className="sm:hidden">Eliminar</span>
+                      </>
                     )}
                   </Button>
                 </div>

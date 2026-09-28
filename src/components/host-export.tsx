@@ -24,8 +24,8 @@ export function HostExport({ hostKey }: { hostKey: string }) {
   );
 
   return (
-    <section className="grid gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
-      <Button onClick={() => setOpen(true)} disabled={open} variant="secondary">
+    <section className="grid min-w-0 gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
+      <Button onClick={() => setOpen(true)} disabled={open} variant="secondary" className="h-11 sm:h-8">
         <Download className="size-4" />
         Descargar todo (ZIP)
       </Button>
@@ -47,9 +47,14 @@ export function HostExport({ hostKey }: { hostKey: string }) {
                 {count === 0 ? (
                   <span className="text-zinc-500">No hay.</span>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid gap-3 sm:flex sm:flex-wrap sm:gap-2">
                     {Array.from({ length: parts }, (_, i) => (
-                      <Button key={i} asChild size="sm" className="bg-indigo-600 hover:bg-indigo-500">
+                      <Button
+                        key={i}
+                        asChild
+                        size="sm"
+                        className="h-11 bg-indigo-600 text-sm hover:bg-indigo-500 sm:h-7 sm:text-[0.8rem]"
+                      >
                         <a href={`/api/host/export?${keyParam}&kind=${kind}&part=${i + 1}`} download>
                           <Download className="size-4" />
                           {parts > 1 ? `Parte ${i + 1} de ${parts}` : "Descargar ZIP"}
