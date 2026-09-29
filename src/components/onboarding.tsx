@@ -13,6 +13,8 @@ import {
 import { ChallengeList } from "@/components/challenge-list";
 import { GameRules } from "@/components/game-rules";
 import { GuestPicker } from "@/components/guest-picker";
+import { GameOverNotice } from "@/components/winner-banner";
+import { useEventEnded } from "@/hooks/use-event-ended";
 import { saveInstagram } from "@/lib/profile";
 
 const INTRO_SEEN_KEY = "reelio_intro_seen";
@@ -43,6 +45,7 @@ export function Onboarding({ open }: { open: boolean }) {
   const [step, setStep] = useState<Step>(() => (readIntroSeen() ? "handle" : "rules"));
   // Only ever set by picking a match from the guest list.
   const [handle, setHandle] = useState<string | null>(null);
+  const ended = useEventEnded();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,7 +60,29 @@ export function Onboarding({ open }: { open: boolean }) {
         onPointerDownOutside={(e) => e.preventDefault()}
         className="max-h-[90dvh] overflow-y-auto border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md"
       >
-        {step === "rules" ? (
+        {step === "rules" && ended ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl uppercase tracking-wide">
+                Se terminó el juego
+              </DialogTitle>
+              <DialogDescription className="sr-only">El juego terminó</DialogDescription>
+            </DialogHeader>
+            <GameOverNotice />
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  // The challenge list is all about points, so skip straight to picking a handle.
+                  markIntroSeen();
+                  setStep("handle");
+                }}
+                className="w-full bg-indigo-600 hover:bg-indigo-500"
+              >
+                Siguiente
+              </Button>
+            </DialogFooter>
+          </>
+        ) : step === "rules" ? (
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-2xl uppercase tracking-wide">
@@ -115,7 +140,8 @@ export function Onboarding({ open }: { open: boolean }) {
                 ¿Cuál es tu Instagram?
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Buscate en la lista de invitados. Va a aparecer en tus fotos y en el ranking.
+                Buscate en la lista de invitados.{" "}
+                {ended ? "Va a aparecer en tus fotos." : "Va a aparecer en tus fotos y en el ranking."}
               </DialogDescription>
             </DialogHeader>
             <GuestPicker value={handle} onChange={setHandle} />
@@ -123,7 +149,7 @@ export function Onboarding({ open }: { open: boolean }) {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setStep("challenges")}
+                onClick={() => setStep(ended ? "rules" : "challenges")}
                 className="text-zinc-400"
               >
                 Volver
@@ -133,7 +159,7 @@ export function Onboarding({ open }: { open: boolean }) {
                 disabled={!handle}
                 className="bg-indigo-600 hover:bg-indigo-500"
               >
-                Empezar a jugar
+                {ended ? "Entrar" : "Empezar a jugar"}
               </Button>
             </DialogFooter>
           </form>

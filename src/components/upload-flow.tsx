@@ -4,6 +4,7 @@ import { useImperativeHandle, useRef, useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { KeepsakeBadge } from "@/components/photo-meta";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import {
 import { uploadToCloudinary } from "@/lib/cloudinary-client";
 import { fireConfetti } from "@/lib/confetti";
 import { CHALLENGES, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
-import { hasEventEnded } from "@/lib/event";
 import { forgetIfNotInvited } from "@/lib/profile";
 
 export type UploadFlowHandle = {
@@ -25,11 +25,14 @@ export type UploadFlowHandle = {
 export function UploadFlow({
   instagram,
   photosUsed,
+  ended,
   onUploaded,
   ref,
 }: {
   instagram: string | null | undefined;
   photosUsed: number;
+  /** The game has closed: uploads still work, but they're keepsakes worth no points. */
+  ended: boolean;
   onUploaded: () => void;
   ref?: React.Ref<UploadFlowHandle>;
 }) {
@@ -51,10 +54,6 @@ export function UploadFlow({
   }
 
   function openPicker(preselectedId = "") {
-    if (hasEventEnded()) {
-      toast.error("El juego ya terminó, no se pueden subir más fotos");
-      return;
-    }
     setChallengeId(preselectedId);
     inputRef.current?.click();
   }
@@ -99,10 +98,12 @@ export function UploadFlow({
       }
 
       const left: number = data.remaining;
+      // Trust the server: the game may have closed while this dialog was open.
+      const headline = data.photo?.postDeadline ? "¡Foto subida de recuerdo!" : "¡Foto subida!";
       toast.success(
         left > 0
-          ? `¡Foto subida! Te quedan ${left} de ${MAX_PHOTOS_PER_USER} fotos.`
-          : `¡Foto subida! Ya usaste tus ${MAX_PHOTOS_PER_USER} fotos.`
+          ? `${headline} Te quedan ${left} de ${MAX_PHOTOS_PER_USER} fotos.`
+          : `${headline} Ya usaste tus ${MAX_PHOTOS_PER_USER} fotos.`
       );
       fireConfetti();
       onUploaded();
@@ -131,13 +132,16 @@ export function UploadFlow({
           className="rounded-full bg-indigo-600 px-6 py-6 text-base font-semibold text-white shadow-lg shadow-indigo-950/50 hover:bg-indigo-500 disabled:bg-zinc-800 disabled:text-zinc-400 disabled:opacity-100"
         >
           <Camera className="mr-2 size-5" />
-          {limitReached ? "Llegaste al límite de fotos" : "Subir consigna"}
+          {limitReached ? "Llegaste al límite de fotos" : ended ? "Subir foto" : "Subir consigna"}
         </Button>
         {instagram && (
           <span className="rounded-full bg-zinc-950/80 px-2.5 py-0.5 text-xs text-zinc-400 backdrop-blur">
             {limitReached
-              ? `Usaste tus ${MAX_PHOTOS_PER_USER} fotos — ahora a juntar likes ❤️`
+              ? ended
+                ? `Usaste tus ${MAX_PHOTOS_PER_USER} fotos`
+                : `Usaste tus ${MAX_PHOTOS_PER_USER} fotos — ahora a juntar likes ❤️`
               : `Te quedan ${remaining} de ${MAX_PHOTOS_PER_USER} fotos`}
+            {ended && !limitReached && " · no suman puntos"}
           </span>
         )}
       </div>
@@ -150,8 +154,15 @@ export function UploadFlow({
       >
         <DialogContent className="max-h-[90dvh] overflow-y-auto border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>¿Qué consigna cumpliste?</DialogTitle>
+            <DialogTitle>{ended ? "¿Qué consigna hiciste?" : "¿Qué consigna cumpliste?"}</DialogTitle>
           </DialogHeader>
+
+          {ended && (
+            <div className="flex items-start gap-2 rounded-lg bg-sky-500/10 px-3 py-2 text-sm text-sky-100 ring-1 ring-sky-500/50">
+              <KeepsakeBadge label="No suma puntos" className="shrink-0" />
+              <span>El juego ya terminó: esta foto es solo recuerdo.</span>
+            </div>
+          )}
 
           {previewUrl && (
             <div className="relative overflow-hidden rounded-lg bg-zinc-950">
@@ -186,7 +197,8 @@ export function UploadFlow({
             </option>
             {CHALLENGES.map((c) => (
               <option key={c.id} value={c.id}>
-                +{c.points} · {c.label}
+                {ended ? "" : `+${c.points} · `}
+                {c.label}
                 {c.menOnly ? " (SOLO HOMBRES)" : ""}
               </option>
             ))}

@@ -9,6 +9,8 @@ export type Photo = {
   challengeId: string;
   challengePoints: number;
   invalidated: boolean;
+  /** Uploaded after the game closed: a keepsake worth no points, left out of the ranking. */
+  postDeadline: boolean;
   likeCount: number;
   createdAt: string;
   likedByMe: boolean;

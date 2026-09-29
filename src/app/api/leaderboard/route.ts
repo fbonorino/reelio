@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import type { LeaderboardEntry } from "@/lib/types";
 
 export async function GET() {
+  // Post-deadline photos are keepsakes: they never count, not even their likes.
   const photos = await prisma.photo.findMany({
+    where: { postDeadline: false },
     select: { instagram: true, challengePoints: true, invalidated: true, likeCount: true },
   });
 

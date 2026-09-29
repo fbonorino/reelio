@@ -25,6 +25,8 @@ model Photo {
   challengePoints Int
   /// Set by the host when the photo doesn't meet its challenge: its challenge points stop counting.
   invalidated     Boolean   @default(false)
+  /// Uploaded after NEXT_PUBLIC_EVENT_END_TIME: a keepsake only. challengePoints is 0 and it's left out of the ranking.
+  postDeadline    Boolean   @default(false)
   likeCount       Int       @default(0)
   createdAt       DateTime  @default(now())
   likes           Like[]

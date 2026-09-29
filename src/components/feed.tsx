@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ImageOff } from "lucide-react";
 import { usePhotos } from "@/hooks/use-photos";
+import { useEventEnded } from "@/hooks/use-event-ended";
 import { forgetIfNotInvited, useInstagram } from "@/lib/profile";
 import { PhotoCard } from "@/components/photo-card";
 import { Lightbox } from "@/components/lightbox";
@@ -15,10 +16,16 @@ export function Feed({ sort }: { sort: "new" | "top" }) {
 
   const { photos, isLoading, mutate } = usePhotos(sort, myInstagram);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const ended = useEventEnded();
 
   async function toggleLike(photoId: string) {
     const target = photos.find((p) => p.id === photoId);
     if (!target || !myInstagram || target.instagram === myInstagram) return;
+    // The ranking is frozen, so game photos' likes are too. Keepsakes can still be liked.
+    if (ended && !target.postDeadline) {
+      toast.error("El juego ya terminó: los likes de las fotos del juego quedaron congelados");
+      return;
+    }
     const unliking = target.likedByMe;
 
     const optimistic: Photo[] = photos.map((p) =>

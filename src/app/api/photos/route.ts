@@ -59,9 +59,8 @@ export async function POST(request: NextRequest) {
   if (!challenge) {
     return NextResponse.json({ error: "Elegí una consigna" }, { status: 400 });
   }
-  if (hasEventEnded()) {
-    return NextResponse.json({ error: "El juego ya terminó" }, { status: 403 });
-  }
+  // Uploads stay open after the game closes, but those photos are keepsakes: no points, no ranking.
+  const postDeadline = hasEventEnded();
 
   try {
     // Serializable so two concurrent uploads from the same user can't both pass the limit check.
@@ -76,7 +75,8 @@ export async function POST(request: NextRequest) {
             type,
             instagram,
             challengeId: challenge.id,
-            challengePoints: challenge.points,
+            challengePoints: postDeadline ? 0 : challenge.points,
+            postDeadline,
           },
         });
         return { photo, count: existing + 1 };

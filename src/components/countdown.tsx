@@ -39,7 +39,7 @@ export function Countdown() {
           Termina en <span className="text-amber-400">{formatRemaining(remaining)}</span>
         </span>
       ) : (
-        <span className="text-amber-400">¡Se terminó el juego! Mirá el ranking final 🏆</span>
+        <span className="text-amber-400">¡Se terminó el juego! Pero podés seguir subiendo fotos de recuerdo 📸</span>
       )}
     </div>
   );

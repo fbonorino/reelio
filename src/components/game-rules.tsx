@@ -14,6 +14,7 @@ const RULES = [
   { emoji: "❤️", text: "Cada like que te den los demás en tus fotos es +1 punto extra." },
   { emoji: "🕵️", text: "Si la foto no cumple la consigna que elegiste, perdés esos puntos... y tenés que tomar un shot 🍻" },
   { emoji: "🏆", text: "El que más puntos tenga al final de la noche se lleva un premio. Tranquilo, NO es un beso con el cumpleañero." },
+  { emoji: "🌙", text: `Después de ${endTimeLabel()} se cierra el juego, pero podés seguir subiendo fotos como recuerdo — esas ya no suman puntos.` },
 ];
 
 /** "Cómo se juega" rules — shared by onboarding and the side panel. */

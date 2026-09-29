@@ -27,7 +27,8 @@ export default function Home() {
   // Also revalidates the saved handle against the guest list; onboarding reopens if it was removed.
   const quota = useQuota(instagram);
   const photosUsed = quota?.used ?? 0;
-  const canUpload = !!instagram && !ended && photosUsed < MAX_PHOTOS_PER_USER;
+  // Uploads stay open after the game closes; those photos just don't score.
+  const canUpload = !!instagram && photosUsed < MAX_PHOTOS_PER_USER;
   const uploadRef = useRef<UploadFlowHandle>(null);
 
   function refreshFeeds() {
@@ -65,6 +66,7 @@ export default function Home() {
         ref={uploadRef}
         instagram={instagram}
         photosUsed={photosUsed}
+        ended={ended}
         onUploaded={refreshFeeds}
       />
       <InfoRail

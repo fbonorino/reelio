@@ -12,6 +12,7 @@ import {
   ChallengeLabel,
   InstagramLink,
   InvalidatedBadge,
+  KeepsakeBadge,
   PointsChip,
 } from "@/components/photo-meta";
 import type { Photo } from "@/lib/types";
@@ -120,7 +121,8 @@ function HostView() {
               key={photo.id}
               className={cn(
                 "flex min-w-0 flex-col overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-zinc-800",
-                photo.invalidated && "ring-2 ring-rose-600"
+                photo.invalidated && "ring-2 ring-rose-600",
+                photo.postDeadline && "ring-sky-700"
               )}
             >
               <a href={photo.url} target="_blank" rel="noopener noreferrer" className="relative block">
@@ -139,30 +141,36 @@ function HostView() {
                 />
                 <ChallengeLabel photo={photo} className="text-sm leading-snug sm:text-xs" />
                 {photo.invalidated && <InvalidatedBadge className="self-start" />}
+                {photo.postDeadline && (
+                  <KeepsakeBadge label="Post-cierre · no suma puntos" className="self-start" />
+                )}
                 <span>{photo.likeCount} likes</span>
                 {/* Wide gap on phones so a thumb aimed at Descontar never lands on Eliminar. */}
                 <div className="mt-auto flex flex-wrap gap-4 pt-1 sm:flex-nowrap sm:gap-2 sm:pt-0">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-11 min-w-36 flex-1 text-sm sm:h-7 sm:min-w-0 sm:text-[0.8rem]"
-                    disabled={togglingId === photo.id}
-                    onClick={() => handleToggleInvalidated(photo)}
-                  >
-                    {togglingId === photo.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : photo.invalidated ? (
-                      <>
-                        <RotateCcw className="size-4" />
-                        Restaurar
-                      </>
-                    ) : (
-                      <>
-                        <MinusCircle className="size-4" />
-                        Descontar puntos
-                      </>
-                    )}
-                  </Button>
+                  {/* Post-deadline photos score nothing, so there's nothing to take away. */}
+                  {!photo.postDeadline && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-11 min-w-36 flex-1 text-sm sm:h-7 sm:min-w-0 sm:text-[0.8rem]"
+                      disabled={togglingId === photo.id}
+                      onClick={() => handleToggleInvalidated(photo)}
+                    >
+                      {togglingId === photo.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : photo.invalidated ? (
+                        <>
+                          <RotateCcw className="size-4" />
+                          Restaurar
+                        </>
+                      ) : (
+                        <>
+                          <MinusCircle className="size-4" />
+                          Descontar puntos
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="destructive"
