@@ -1,4 +1,4 @@
-import { getChallenge } from "@/lib/challenges";
+import { getChallengeLabel } from "@/lib/challenges";
 
 export type ExportKind = "image" | "video";
 
@@ -21,7 +21,7 @@ export function slugify(text: string) {
 
 /** "Foto acostado en el piso del boliche" → "acostado-en-el-piso-del-boliche". */
 export function challengeSlug(challengeId: string) {
-  const label = getChallenge(challengeId)?.label.replace(/^foto\s+/i, "");
+  const label = getChallengeLabel(challengeId)?.replace(/^foto\s+/i, "");
   return slugify(label ?? challengeId) || "consigna";
 }
 
