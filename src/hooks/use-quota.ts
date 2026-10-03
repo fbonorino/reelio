@@ -4,7 +4,10 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { forgetIfNotInvited } from "@/lib/profile";
 
-type Quota = { used: number; remaining: number; max: number };
+type Count = { used: number; remaining: number; max: number };
+
+/** Top-level counts are challenge photos; `free` is "Foto libre", capped separately. */
+export type Quota = Count & { free: Count };
 
 async function fetchQuota(url: string): Promise<Quota> {
   const res = await fetch(url);

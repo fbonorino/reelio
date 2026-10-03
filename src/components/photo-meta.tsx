@@ -1,5 +1,5 @@
 import { Ban, Camera } from "lucide-react";
-import { getChallengeLabel } from "@/lib/challenges";
+import { getChallengeLabel, isFreePhoto } from "@/lib/challenges";
 import { instagramUrl } from "@/lib/instagram";
 import { cn } from "@/lib/utils";
 import type { Photo } from "@/lib/types";
@@ -40,8 +40,9 @@ export function PointsBadge({
   );
 }
 
-/** Challenge points, or a "Recuerdo" tag for photos uploaded after the game closed. */
+/** Challenge points, a "Libre" tag for free photos, or "Recuerdo" for photos uploaded after the game closed. */
 export function PointsChip({ photo, className }: { photo: Photo; className?: string }) {
+  if (isFreePhoto(photo.challengeId)) return <FreeBadge className={className} />;
   if (photo.postDeadline) return <KeepsakeBadge className={className} />;
   return (
     <PointsBadge points={photo.challengePoints} struck={photo.invalidated} className={className} />
@@ -66,6 +67,20 @@ export function InvalidatedBadge({ className }: { className?: string }) {
     >
       <Ban className="size-3.5" />
       Invalidada — debe 1 shot
+    </span>
+  );
+}
+
+/** Marks a "Foto libre": any photo of the night, never worth points. Grey, so it reads as secondary. */
+export function FreeBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full bg-zinc-700 px-2 py-0.5 text-xs font-semibold text-zinc-200",
+        className
+      )}
+    >
+      Libre
     </span>
   );
 }

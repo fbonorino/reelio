@@ -15,6 +15,7 @@ import {
   KeepsakeBadge,
   PointsChip,
 } from "@/components/photo-meta";
+import { isFreePhoto } from "@/lib/challenges";
 import type { Photo } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -147,8 +148,8 @@ function HostView() {
                 <span>{photo.likeCount} likes</span>
                 {/* Wide gap on phones so a thumb aimed at Descontar never lands on Eliminar. */}
                 <div className="mt-auto flex flex-wrap gap-4 pt-1 sm:flex-nowrap sm:gap-2 sm:pt-0">
-                  {/* Post-deadline photos score nothing, so there's nothing to take away. */}
-                  {!photo.postDeadline && (
+                  {/* Post-deadline and free photos score nothing, so there's nothing to take away. */}
+                  {!photo.postDeadline && !isFreePhoto(photo.challengeId) && (
                     <Button
                       size="sm"
                       variant="secondary"

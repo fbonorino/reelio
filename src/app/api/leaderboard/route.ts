@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { FREE_PHOTO } from "@/lib/challenges";
 import { rankEntries } from "@/lib/ranking";
 import type { LeaderboardEntry, TopPhoto } from "@/lib/types";
 
@@ -12,9 +13,10 @@ function latest(...dates: (Date | null | undefined)[]) {
 }
 
 export async function GET() {
-  // Post-deadline photos are keepsakes: they never count, not even their likes.
+  // Post-deadline photos are keepsakes and free photos never score: neither counts, not even
+  // their likes. Leaving them out here keeps them out of the tiebreak and the winner too.
   const photos = await prisma.photo.findMany({
-    where: { postDeadline: false },
+    where: { postDeadline: false, challengeId: { not: FREE_PHOTO.id } },
     select: {
       id: true,
       url: true,

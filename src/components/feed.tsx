@@ -9,6 +9,7 @@ import { forgetIfNotInvited, useInstagram } from "@/lib/profile";
 import { PhotoCard } from "@/components/photo-card";
 import { Lightbox } from "@/components/lightbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isFreePhoto } from "@/lib/challenges";
 import type { Photo } from "@/lib/types";
 
 export function Feed({ sort }: { sort: "new" | "top" }) {
@@ -21,8 +22,8 @@ export function Feed({ sort }: { sort: "new" | "top" }) {
   async function toggleLike(photoId: string) {
     const target = photos.find((p) => p.id === photoId);
     if (!target || !myInstagram || target.instagram === myInstagram) return;
-    // The ranking is frozen, so game photos' likes are too. Keepsakes can still be liked.
-    if (ended && !target.postDeadline) {
+    // The ranking is frozen, so game photos' likes are too. Keepsakes and free photos can still be liked.
+    if (ended && !target.postDeadline && !isFreePhoto(target.challengeId)) {
       toast.error("El juego ya terminó: los likes de las fotos del juego quedaron congelados");
       return;
     }

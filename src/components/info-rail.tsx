@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ChallengeList } from "@/components/challenge-list";
+import { ChallengeList, type Pickable } from "@/components/challenge-list";
 import { GameRules } from "@/components/game-rules";
 
 type Panel = "rules" | "challenges";
@@ -23,7 +23,13 @@ const BUTTONS = [
  * Narrow icon rail fixed to the right edge, opening rules / challenges in a slide-over.
  * `onPickChallenge` adds a "Subir esta" button per challenge; omit it when uploading isn't possible.
  */
-export function InfoRail({ onPickChallenge }: { onPickChallenge?: (challengeId: string) => void }) {
+export function InfoRail({
+  onPickChallenge,
+  pickable,
+}: {
+  onPickChallenge?: (challengeId: string) => void;
+  pickable?: Pickable;
+}) {
   const [open, setOpen] = useState(false);
   // Kept after closing so the content doesn't swap during the exit animation.
   const [panel, setPanel] = useState<Panel>("rules");
@@ -71,6 +77,7 @@ export function InfoRail({ onPickChallenge }: { onPickChallenge?: (challengeId: 
               <GameRules />
             ) : (
               <ChallengeList
+                pickable={pickable}
                 onPick={
                   onPickChallenge &&
                   ((id) => {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
 import { isInvited, notInvitedResponse } from "@/lib/guests";
+import { isFreePhoto } from "@/lib/challenges";
 
 type LikeRequest = { photoId: string; instagram: string };
 
@@ -26,14 +27,14 @@ async function validate(request: NextRequest): Promise<LikeRequest | NextRespons
   // Likes are worth points to the uploader, so you can't like your own photos.
   const photo = await prisma.photo.findUnique({
     where: { id: photoId },
-    select: { instagram: true, postDeadline: true },
+    select: { instagram: true, postDeadline: true, challengeId: true },
   });
   if (!photo) {
     return NextResponse.json({ error: "La foto ya no existe" }, { status: 404 });
   }
   // Once the game closes the ranking is frozen, so game photos can't gain or lose likes.
-  // Post-deadline photos don't count toward the ranking, so they can keep getting likes.
-  if (hasEventEnded() && !photo.postDeadline) {
+  // Post-deadline and free photos don't count toward the ranking, so they can keep getting likes.
+  if (hasEventEnded() && !photo.postDeadline && !isFreePhoto(photo.challengeId)) {
     return NextResponse.json(
       { error: "El juego ya terminó: los likes de las fotos del juego quedaron congelados" },
       { status: 403 }

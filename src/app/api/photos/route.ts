@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getChallenge, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
+import {
+  FREE_PHOTO,
+  getChallenge,
+  MAX_FREE_PHOTOS_PER_USER,
+  MAX_PHOTOS_PER_USER,
+} from "@/lib/challenges";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
 import { isInvited, notInvitedResponse } from "@/lib/guests";
@@ -42,6 +47,7 @@ export async function POST(request: NextRequest) {
   }
   const { url, thumbnailUrl, type, challengeId } = body;
   const instagram = normalizeInstagram(body.instagram);
+  const free = challengeId === FREE_PHOTO.id;
   const challenge = typeof challengeId === "string" ? getChallenge(challengeId) : undefined;
 
   if (!url || !thumbnailUrl || !type) {
@@ -56,26 +62,29 @@ export async function POST(request: NextRequest) {
   if (!(await isInvited(instagram))) {
     return notInvitedResponse();
   }
-  if (!challenge) {
+  if (!challenge && !free) {
     return NextResponse.json({ error: "Elegí una consigna" }, { status: 400 });
   }
   // Uploads stay open after the game closes, but those photos are keepsakes: no points, no ranking.
   const postDeadline = hasEventEnded();
+  // Challenge photos and free photos are capped separately, before and after the close alike.
+  const max = free ? MAX_FREE_PHOTOS_PER_USER : MAX_PHOTOS_PER_USER;
+  const sameKind = free ? FREE_PHOTO.id : { not: FREE_PHOTO.id };
 
   try {
     // Serializable so two concurrent uploads from the same user can't both pass the limit check.
     const { photo, count } = await prisma.$transaction(
       async (tx) => {
-        const existing = await tx.photo.count({ where: { instagram } });
-        if (existing >= MAX_PHOTOS_PER_USER) throw new LimitReachedError();
+        const existing = await tx.photo.count({ where: { instagram, challengeId: sameKind } });
+        if (existing >= max) throw new LimitReachedError();
         const photo = await tx.photo.create({
           data: {
             url,
             thumbnailUrl,
             type,
             instagram,
-            challengeId: challenge.id,
-            challengePoints: postDeadline ? 0 : challenge.points,
+            challengeId: challenge?.id ?? FREE_PHOTO.id,
+            challengePoints: postDeadline ? 0 : (challenge?.points ?? 0),
             postDeadline,
           },
         });
@@ -84,14 +93,17 @@ export async function POST(request: NextRequest) {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
 
-    return NextResponse.json(
-      { photo, remaining: MAX_PHOTOS_PER_USER - count },
-      { status: 201 }
-    );
+    // `remaining` is always for the kind just uploaded.
+    return NextResponse.json({ photo, remaining: max - count }, { status: 201 });
   } catch (err) {
     if (err instanceof LimitReachedError) {
       return NextResponse.json(
-        { error: `Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos`, remaining: 0 },
+        {
+          error: free
+            ? `Ya subiste tus ${MAX_FREE_PHOTOS_PER_USER} fotos libres`
+            : `Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos de consignas`,
+          remaining: 0,
+        },
         { status: 409 }
       );
     }

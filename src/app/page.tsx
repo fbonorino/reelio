@@ -9,7 +9,7 @@ import { Leaderboard } from "@/components/leaderboard";
 import { Countdown } from "@/components/countdown";
 import { Onboarding } from "@/components/onboarding";
 import { InfoRail } from "@/components/info-rail";
-import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
+import { MAX_FREE_PHOTOS_PER_USER, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { GameOver } from "@/components/winner-announcement";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { useWinnerPreview } from "@/hooks/use-winner-preview";
@@ -29,8 +29,13 @@ export default function Home() {
   // Also revalidates the saved handle against the guest list; onboarding reopens if it was removed.
   const quota = useQuota(instagram);
   const photosUsed = quota?.used ?? 0;
+  const freeUsed = quota?.free?.used ?? 0;
   // Uploads stay open after the game closes; those photos just don't score.
-  const canUpload = !!instagram && photosUsed < MAX_PHOTOS_PER_USER;
+  // Challenge photos and "Foto libre" are capped separately.
+  const pickable = {
+    challenges: photosUsed < MAX_PHOTOS_PER_USER,
+    free: freeUsed < MAX_FREE_PHOTOS_PER_USER,
+  };
   const uploadRef = useRef<UploadFlowHandle>(null);
 
   function refreshFeeds() {
@@ -68,11 +73,14 @@ export default function Home() {
         ref={uploadRef}
         instagram={instagram}
         photosUsed={photosUsed}
+        freeUsed={freeUsed}
         ended={ended}
         onUploaded={refreshFeeds}
       />
       <InfoRail
-        onPickChallenge={canUpload ? (id) => uploadRef.current?.start(id) : undefined}
+        // The list itself disables or hides what's out of room, and says why.
+        onPickChallenge={instagram ? (id) => uploadRef.current?.start(id) : undefined}
+        pickable={pickable}
       />
       {/* Remount when it reopens (handle removed from the guest list) so it starts from a clean search.
           Held back during a winner preview, which may run on a device that never onboarded. */}

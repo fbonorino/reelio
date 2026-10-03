@@ -49,11 +49,11 @@ export async function uploadToCloudinary(
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(JSON.parse(xhr.responseText));
       } else {
-        reject(new Error("Upload failed. Please try again."));
+        reject(new Error("Falló la subida de la foto"));
       }
     };
 
-    xhr.onerror = () => reject(new Error("Upload failed. Please check your connection."));
+    xhr.onerror = () => reject(new Error("Falló la subida: revisá tu conexión"));
 
     xhr.send(formData);
   });
