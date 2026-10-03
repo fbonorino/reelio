@@ -19,7 +19,11 @@ export async function PATCH(
 
   const { id } = await params;
   try {
-    const photo = await prisma.photo.update({ where: { id }, data: { invalidated } });
+    // adjustedAt counts as a scoring event for the "who got there first" tiebreak.
+    const photo = await prisma.photo.update({
+      where: { id },
+      data: { invalidated, adjustedAt: new Date() },
+    });
     return NextResponse.json({ photo });
   } catch {
     return NextResponse.json({ error: "Photo not found" }, { status: 404 });

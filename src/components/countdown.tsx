@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { getEventEnd } from "@/lib/event";
+import { serverNow, syncServerClock } from "@/lib/server-clock";
 
 const eventEnd = getEventEnd();
 
@@ -20,8 +21,9 @@ export function Countdown() {
 
   useEffect(() => {
     if (!eventEnd) return;
-    const tick = () => setNow(Date.now());
+    const tick = () => setNow(serverNow());
     tick();
+    syncServerClock().then(tick);
     const interval = setInterval(tick, 15_000);
     return () => clearInterval(interval);
   }, []);

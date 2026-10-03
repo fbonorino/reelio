@@ -1,33 +1,70 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { LeaderboardEntry } from "@/lib/types";
+import { rankEntries } from "@/lib/ranking";
+import type { LeaderboardEntry, TopPhoto } from "@/lib/types";
+
+type Totals = Omit<LeaderboardEntry, "rank" | "instagram" | "lastScoredAt"> & {
+  lastScoredAt: Date | null;
+};
+
+function latest(...dates: (Date | null | undefined)[]) {
+  return dates.reduce<Date | null>((max, d) => (d && (!max || d > max) ? d : max), null);
+}
 
 export async function GET() {
   // Post-deadline photos are keepsakes: they never count, not even their likes.
   const photos = await prisma.photo.findMany({
     where: { postDeadline: false },
-    select: { instagram: true, challengePoints: true, invalidated: true, likeCount: true },
+    select: {
+      id: true,
+      url: true,
+      thumbnailUrl: true,
+      type: true,
+      instagram: true,
+      challengePoints: true,
+      invalidated: true,
+      likeCount: true,
+      createdAt: true,
+      adjustedAt: true,
+      // Only the newest like matters: it's the photo's last scoring event from a like.
+      likes: { select: { createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
+    },
   });
 
-  const totals = new Map<string, { score: number; photoCount: number }>();
+  const totals = new Map<string, Totals>();
   for (const photo of photos) {
-    const entry = totals.get(photo.instagram) ?? { score: 0, photoCount: 0 };
+    const entry: Totals = totals.get(photo.instagram) ?? {
+      score: 0,
+      photoCount: 0,
+      likes: 0,
+      topPhoto: null,
+      lastScoredAt: null,
+    };
     // Invalidated photos lose their challenge points but keep the likes they earned.
-    entry.score += (photo.invalidated ? 0 : photo.challengePoints) + photo.likeCount;
+    const points = (photo.invalidated ? 0 : photo.challengePoints) + photo.likeCount;
+    entry.score += points;
     entry.photoCount += 1;
+    entry.likes += photo.likeCount;
+    if (!entry.topPhoto || points > entry.topPhoto.points) {
+      const { id, url, thumbnailUrl, type } = photo;
+      entry.topPhoto = { id, url, thumbnailUrl, type, points } satisfies TopPhoto;
+    }
+    entry.lastScoredAt = latest(
+      entry.lastScoredAt,
+      photo.createdAt,
+      photo.adjustedAt,
+      photo.likes[0]?.createdAt
+    );
     totals.set(photo.instagram, entry);
   }
 
-  const sorted = [...totals.entries()]
-    .map(([instagram, t]) => ({ instagram, ...t }))
-    .sort((a, b) => b.score - a.score || a.instagram.localeCompare(b.instagram));
-
-  // Standard competition ranking: ties share a position (1, 2, 2, 4).
-  const leaderboard: LeaderboardEntry[] = [];
-  sorted.forEach((entry, i) => {
-    const prev = leaderboard[i - 1];
-    leaderboard.push({ ...entry, rank: prev && prev.score === entry.score ? prev.rank : i + 1 });
-  });
+  const leaderboard: LeaderboardEntry[] = rankEntries(
+    [...totals.entries()].map(([instagram, t]) => ({
+      instagram,
+      ...t,
+      lastScoredAt: t.lastScoredAt?.toISOString() ?? null,
+    }))
+  );
 
   return NextResponse.json({ leaderboard });
 }

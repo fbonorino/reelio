@@ -10,8 +10,9 @@ import { Countdown } from "@/components/countdown";
 import { Onboarding } from "@/components/onboarding";
 import { InfoRail } from "@/components/info-rail";
 import { MAX_PHOTOS_PER_USER } from "@/lib/challenges";
-import { WinnerBanner } from "@/components/winner-banner";
+import { GameOver } from "@/components/winner-announcement";
 import { useEventEnded } from "@/hooks/use-event-ended";
+import { useWinnerPreview } from "@/hooks/use-winner-preview";
 import { useQuota } from "@/hooks/use-quota";
 import { useInstagram } from "@/lib/profile";
 
@@ -24,6 +25,7 @@ export default function Home() {
   const { mutate } = useSWRConfig();
   const instagram = useInstagram();
   const ended = useEventEnded();
+  const preview = useWinnerPreview();
   // Also revalidates the saved handle against the guest list; onboarding reopens if it was removed.
   const quota = useQuota(instagram);
   const photosUsed = quota?.used ?? 0;
@@ -48,7 +50,7 @@ export default function Home() {
           {eventName}
         </h1>
         <Countdown />
-        {ended && <WinnerBanner />}
+        <GameOver ended={ended} instagram={instagram} preview={preview} />
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList className="grid w-full grid-cols-3 bg-zinc-900">
             <TabsTrigger value="new">En vivo</TabsTrigger>
@@ -72,8 +74,9 @@ export default function Home() {
       <InfoRail
         onPickChallenge={canUpload ? (id) => uploadRef.current?.start(id) : undefined}
       />
-      {/* Remount when it reopens (handle removed from the guest list) so it starts from a clean search. */}
-      <Onboarding key={instagram === null ? "open" : "closed"} open={instagram === null} />
+      {/* Remount when it reopens (handle removed from the guest list) so it starts from a clean search.
+          Held back during a winner preview, which may run on a device that never onboarded. */}
+      <Onboarding key={instagram === null ? "open" : "closed"} open={instagram === null && !preview} />
     </div>
   );
 }

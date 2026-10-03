@@ -1,24 +1,17 @@
 "use client";
 
-import useSWR from "swr";
 import { Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InstagramLink } from "@/components/photo-meta";
+import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { useInstagram } from "@/lib/profile";
 import { cn } from "@/lib/utils";
-import type { LeaderboardEntry } from "@/lib/types";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const PODIUM = ["text-amber-400", "text-zinc-300", "text-orange-400"];
 
 export function Leaderboard() {
   const myInstagram = useInstagram();
-  const { data, isLoading } = useSWR<{ leaderboard: LeaderboardEntry[] }>(
-    "/api/leaderboard",
-    fetcher,
-    { refreshInterval: 4000, revalidateOnFocus: true }
-  );
+  const { data, isLoading } = useLeaderboard();
 
   if (isLoading) {
     return (
