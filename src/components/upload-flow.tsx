@@ -199,7 +199,6 @@ export function UploadFlow({
               <option key={c.id} value={c.id}>
                 {ended ? "" : `+${c.points} · `}
                 {c.label}
-                {c.menOnly ? " (SOLO HOMBRES)" : ""}
               </option>
             ))}
           </select>

@@ -15,7 +15,6 @@ export function ChallengeList({ onPick }: { onPick?: (challengeId: string) => vo
             <PointsBadge points={c.points} className="w-11 shrink-0 text-center" />
             <p className="min-w-0 flex-1 text-sm leading-snug text-zinc-200">
               {c.label}
-              {c.menOnly && <span className="font-semibold text-zinc-400"> (SOLO HOMBRES)</span>}
             </p>
           </div>
           {onPick && (

@@ -2,7 +2,6 @@ export type Challenge = {
   id: string;
   label: string;
   points: number;
-  menOnly?: boolean;
 };
 
 // Ordered from easiest to hardest. Ids are stored in the DB — don't rename them.
@@ -13,9 +12,9 @@ export const CHALLENGES: Challenge[] = [
   { id: "piso", label: "Foto acostado en el piso del boliche", points: 14 },
   { id: "zapato", label: "Foto con el zapato de un desconocido", points: 18 },
   { id: "patova", label: "Foto abrazando un patova", points: 22 },
-  { id: "desconocidas", label: "Selfie con +5 desconocid@s", points: 28, menOnly: true },
-  { id: "colorado", label: "Foto besándole la frente a un/a colorad@", points: 32 },
-  { id: "propuesta", label: "Foto propuesta de matrimonio", points: 42 },
+  { id: "desconocidas", label: "Selfie con +5 desconocid@s", points: 28 },
+  { id: "colorado", label: "Foto besándole la frente a un/a colorad@", points: 42 },
+  { id: "propuesta", label: "Foto propuesta de matrimonio", points: 32 },
 ];
 
 /**
