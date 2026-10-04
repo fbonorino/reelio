@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Trophy } from "lucide-react";
+import { Heart, Play, Trophy } from "lucide-react";
 import type { Photo } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -29,7 +29,7 @@ export function PhotoCard({
   return (
     <div
       className={cn(
-        "group relative mb-3 break-inside-avoid overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-zinc-800",
+        "group relative overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-zinc-800",
         isMostLiked && "ring-2 ring-amber-400",
         photo.invalidated && "ring-2 ring-rose-600"
       )}
@@ -45,24 +45,31 @@ export function PhotoCard({
         <InvalidatedBadge className="absolute inset-x-2 top-10 z-10 justify-center text-center shadow" />
       )}
 
-      <button onClick={onOpen} className="block w-full">
-        {photo.type === "VIDEO" ? (
-          <video
-            src={photo.url}
-            poster={photo.thumbnailUrl}
-            className={cn("w-full object-cover", photo.invalidated && "opacity-50 grayscale")}
-            muted
-            playsInline
-            preload="metadata"
-          />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photo.thumbnailUrl}
-            alt={alt}
-            loading="lazy"
-            className={cn("w-full object-cover", photo.invalidated && "opacity-50 grayscale")}
-          />
+      <button
+        onClick={onOpen}
+        aria-label={photo.type === "VIDEO" ? `Video de @${photo.instagram}` : undefined}
+        className="relative block w-full transition-opacity active:opacity-80"
+      >
+        {/* Thumbnails are 500×500 crops (posters included for videos): the square is reserved
+            before they load, so nothing jumps and lazy loading only fetches what's on screen.
+            Videos show just their poster here; the lightbox plays them, so the feed never
+            downloads video. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={photo.thumbnailUrl}
+          alt={photo.type === "VIDEO" ? "" : alt}
+          width={500}
+          height={500}
+          loading="lazy"
+          decoding="async"
+          className={cn("aspect-square w-full object-cover", photo.invalidated && "opacity-50 grayscale")}
+        />
+        {photo.type === "VIDEO" && (
+          <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+            <span className="flex size-11 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play className="ml-0.5 size-5 fill-current" />
+            </span>
+          </span>
         )}
       </button>
 
@@ -77,7 +84,9 @@ export function PhotoCard({
             }}
             disabled={isMine}
             aria-label={isMine ? "No podés likear tu propia foto" : "Me gusta"}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-1 text-sm font-medium transition-colors active:scale-95 disabled:opacity-60 disabled:active:scale-100"
+            aria-pressed={photo.likedByMe}
+            // The invisible ::after stretches the touch target to 44px without changing the pill.
+            className="relative flex shrink-0 items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-1 text-sm font-medium transition-transform after:absolute after:-inset-x-1 after:-inset-y-2 active:scale-95 disabled:opacity-60 disabled:active:scale-100"
           >
             <Heart
               className={cn(

@@ -16,6 +16,7 @@ import { GuestPicker } from "@/components/guest-picker";
 import { GameOverNotice } from "@/components/winner-banner";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { saveInstagram } from "@/lib/profile";
+import { cn } from "@/lib/utils";
 
 const INTRO_SEEN_KEY = "reelio_intro_seen";
 
@@ -36,6 +37,9 @@ function markIntroSeen() {
 }
 
 type Step = "rules" | "challenges" | "handle";
+
+/** Pinned to the bottom of the scrolling dialog (past its padding), so the next step is reachable without scrolling. */
+const FOOTER = "sticky -bottom-4 z-10 gap-2 bg-zinc-900";
 
 /**
  * Blocking first-run flow: rules, challenges, then picking your handle from the guest list.
@@ -58,7 +62,11 @@ export function Onboarding({ open }: { open: boolean }) {
         showCloseButton={false}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
-        className="max-h-[90dvh] overflow-y-auto border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md"
+        className={cn(
+          "max-h-[90dvh] overflow-y-auto overscroll-contain border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md",
+          // On phones the handle search sits near the top, so its results stay above the keyboard.
+          step === "handle" && "max-sm:top-[max(1rem,env(safe-area-inset-top))] max-sm:translate-y-0"
+        )}
       >
         {step === "rules" && ended ? (
           <>
@@ -69,14 +77,14 @@ export function Onboarding({ open }: { open: boolean }) {
               <DialogDescription className="sr-only">El juego terminó</DialogDescription>
             </DialogHeader>
             <GameOverNotice />
-            <DialogFooter>
+            <DialogFooter className={FOOTER}>
               <Button
                 onClick={() => {
                   // The challenge list is all about points, so skip straight to picking a handle.
                   markIntroSeen();
                   setStep("handle");
                 }}
-                className="w-full bg-indigo-600 hover:bg-indigo-500"
+                className="h-11 w-full bg-indigo-600 text-white text-base hover:bg-indigo-500"
               >
                 Siguiente
               </Button>
@@ -93,10 +101,10 @@ export function Onboarding({ open }: { open: boolean }) {
               </DialogDescription>
             </DialogHeader>
             <GameRules />
-            <DialogFooter>
+            <DialogFooter className={FOOTER}>
               <Button
                 onClick={() => setStep("challenges")}
-                className="w-full bg-indigo-600 hover:bg-indigo-500"
+                className="h-11 w-full bg-indigo-600 text-white text-base hover:bg-indigo-500"
               >
                 Siguiente
               </Button>
@@ -113,12 +121,12 @@ export function Onboarding({ open }: { open: boolean }) {
               </DialogDescription>
             </DialogHeader>
             <ChallengeList />
-            <DialogFooter className="gap-2">
+            <DialogFooter className={FOOTER}>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setStep("rules")}
-                className="text-zinc-400"
+                className="h-11 text-base text-zinc-300 sm:px-4"
               >
                 Volver
               </Button>
@@ -127,7 +135,7 @@ export function Onboarding({ open }: { open: boolean }) {
                   markIntroSeen();
                   setStep("handle");
                 }}
-                className="bg-indigo-600 hover:bg-indigo-500"
+                className="h-11 bg-indigo-600 text-white text-base hover:bg-indigo-500 sm:px-4"
               >
                 Siguiente
               </Button>
@@ -145,19 +153,19 @@ export function Onboarding({ open }: { open: boolean }) {
               </DialogDescription>
             </DialogHeader>
             <GuestPicker value={handle} onChange={setHandle} />
-            <DialogFooter className="gap-2">
+            <DialogFooter className={FOOTER}>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setStep(ended ? "rules" : "challenges")}
-                className="text-zinc-400"
+                className="h-11 text-base text-zinc-300 sm:px-4"
               >
                 Volver
               </Button>
               <Button
                 type="submit"
                 disabled={!handle}
-                className="bg-indigo-600 hover:bg-indigo-500"
+                className="h-11 bg-indigo-600 text-white text-base hover:bg-indigo-500 sm:px-4"
               >
                 {ended ? "Entrar" : "Empezar a jugar"}
               </Button>

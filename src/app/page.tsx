@@ -49,21 +49,25 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950">
-      <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 px-4 pb-3 pt-4 backdrop-blur">
+    <div className="flex min-h-dvh flex-col bg-zinc-950 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+      <header className="px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <h1 className="mb-1 text-center font-display text-2xl uppercase tracking-wide text-zinc-50">
           {eventName}
         </h1>
         <Countdown />
         <GameOver ended={ended} instagram={instagram} preview={preview} />
+      </header>
+      {/* Only the tabs stick: with the winner banner, the whole header would cover a third of a small phone.
+          51px leaves each tab 44px tall inside the list's padding. */}
+      <div className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-          <TabsList className="grid w-full grid-cols-3 bg-zinc-900">
+          <TabsList className="grid w-full grid-cols-3 bg-zinc-900 group-data-horizontal/tabs:h-[51px]">
             <TabsTrigger value="new">En vivo</TabsTrigger>
             <TabsTrigger value="top">Más likeadas</TabsTrigger>
             <TabsTrigger value="ranking">Ranking</TabsTrigger>
           </TabsList>
         </Tabs>
-      </header>
+      </div>
 
       <main className="flex flex-1 flex-col">
         {tab === "ranking" ? <Leaderboard /> : <Feed sort={tab} />}

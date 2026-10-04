@@ -128,5 +128,17 @@
   }
   html {
     @apply font-sans;
+    /* The app is always dark: native controls, scrollbars and autofill follow. */
+    color-scheme: dark;
+    /* Interactive elements show their own :active state instead of the grey/blue tap flash. */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* No double-tap zoom on controls, so quick repeated taps (likes) never zoom the page. */
+  a,
+  button,
+  [role="button"],
+  [role="tab"],
+  label {
+    touch-action: manipulation;
   }
 }

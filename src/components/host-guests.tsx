@@ -89,7 +89,7 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
           {isLoading ? "…" : guests.length}
         </span>
       </div>
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-400">
         Solo estos @ pueden subir fotos y likear. Si sacás a alguien, sus fotos quedan.
       </p>
 
@@ -106,7 +106,7 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
         <Button
           type="submit"
           disabled={adding || !text.trim()}
-          className="h-11 bg-indigo-600 hover:bg-indigo-500 sm:h-8"
+          className="h-11 bg-indigo-600 text-white hover:bg-indigo-500 sm:pointer-fine:h-8"
         >
           {adding ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
           Agregar a la lista
@@ -122,13 +122,13 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="h-11 border-zinc-700 bg-zinc-950 sm:h-8"
+            className="h-11 border-zinc-700 bg-zinc-950 sm:pointer-fine:h-8"
           />
-          <ul className="max-h-80 divide-y divide-zinc-800 overflow-y-auto rounded-md ring-1 ring-zinc-800">
+          <ul className="max-h-80 divide-y divide-zinc-800 overflow-y-auto overscroll-contain rounded-md ring-1 ring-zinc-800">
             {visible.map((guest) => (
               <li
                 key={guest.handle}
-                className="flex items-center justify-between gap-2 py-0.5 pl-3 pr-1 text-base sm:py-1.5 sm:pr-3 sm:text-sm"
+                className="flex items-center justify-between gap-2 py-0.5 pl-3 pr-1 text-base sm:pointer-fine:py-1.5 sm:pointer-fine:pr-3 sm:text-sm"
               >
                 <span className="min-w-0 truncate text-zinc-200">@{guest.handle}</span>
                 <Button
@@ -137,7 +137,7 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
                   aria-label={`Sacar a @${guest.handle}`}
                   disabled={removing === guest.handle}
                   onClick={() => handleRemove(guest.handle)}
-                  className="size-11 text-zinc-500 hover:text-rose-400 sm:size-7"
+                  className="size-11 text-zinc-500 hover:text-rose-400 sm:pointer-fine:size-7"
                 >
                   {removing === guest.handle ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -148,7 +148,7 @@ export function HostGuests({ hostKey }: { hostKey: string }) {
               </li>
             ))}
             {visible.length === 0 && (
-              <li className="px-3 py-2 text-sm text-zinc-500">Nadie coincide con “{filter}”.</li>
+              <li className="px-3 py-2 text-sm text-zinc-400">Nadie coincide con “{filter}”.</li>
             )}
           </ul>
         </>

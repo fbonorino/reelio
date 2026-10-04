@@ -37,7 +37,7 @@ export function InfoRail({
   return (
     <>
       {/* Lower third: reachable one-handed, and above the centered "Subir consigna" button. */}
-      <nav className="fixed bottom-40 right-0 z-40 flex flex-col gap-1 rounded-l-2xl border border-r-0 border-zinc-700 bg-zinc-900/85 p-1 shadow-lg shadow-black/40 backdrop-blur">
+      <nav className="fixed bottom-[calc(10rem+env(safe-area-inset-bottom))] right-[env(safe-area-inset-right)] z-40 flex flex-col gap-1 rounded-l-2xl border border-r-0 border-zinc-700 bg-zinc-900/85 p-1 shadow-lg shadow-black/40 backdrop-blur">
         {BUTTONS.map(({ panel: p, icon: Icon, label }) => (
           <button
             key={p}
@@ -46,7 +46,7 @@ export function InfoRail({
               setOpen(true);
             }}
             aria-label={label}
-            className="flex size-10 items-center justify-center rounded-xl text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-50 active:scale-95"
+            className="flex size-11 items-center justify-center rounded-xl text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-50 active:scale-95 active:bg-zinc-800"
           >
             <Icon className="size-5" />
           </button>
@@ -56,14 +56,14 @@ export function InfoRail({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="w-[88%] gap-0 border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md">
           {panel === "rules" ? (
-            <SheetHeader className="pr-12">
+            <SheetHeader className="pr-14 pt-[max(1rem,env(safe-area-inset-top))]">
               <SheetTitle className="font-display text-2xl uppercase tracking-wide text-zinc-50">
                 Cómo se juega
               </SheetTitle>
               <SheetDescription className="sr-only">Reglas del juego</SheetDescription>
             </SheetHeader>
           ) : (
-            <SheetHeader className="pr-12">
+            <SheetHeader className="pr-14 pt-[max(1rem,env(safe-area-inset-top))]">
               <SheetTitle className="font-display text-2xl uppercase tracking-wide text-zinc-50">
                 Consignas
               </SheetTitle>
@@ -72,7 +72,7 @@ export function InfoRail({
               </SheetDescription>
             </SheetHeader>
           )}
-          <div className="flex-1 overflow-y-auto px-4 pb-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
             {panel === "rules" ? (
               <GameRules />
             ) : (

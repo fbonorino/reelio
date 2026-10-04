@@ -18,6 +18,24 @@ function buildThumbnailUrl(secureUrl: string, resourceType: "image" | "video") {
   return secureUrl.replace("/upload/", "/upload/w_500,h_500,c_fill,q_auto,f_auto/");
 }
 
+const FULL_SCREEN = "w_1600,h_1600,c_limit,q_auto";
+
+/**
+ * Full-screen image, sized for phones (sharp at 3x on the widest ones) and in a format every
+ * browser decodes, instead of the multi-MB original (or a HEIC Android can't show).
+ * URLs that aren't plain Cloudinary uploads come back unchanged.
+ */
+export function fullScreenImageUrl(url: string) {
+  if (!url.startsWith("https://res.cloudinary.com/")) return url;
+  return url.replace("/image/upload/", `/image/upload/${FULL_SCREEN},f_auto/`);
+}
+
+/** First frame of a video at full-screen size, uncropped (the thumbnail is a square crop). */
+export function videoPosterUrl(url: string) {
+  if (!url.startsWith("https://res.cloudinary.com/")) return undefined;
+  return url.replace("/video/upload/", `/video/upload/${FULL_SCREEN},so_0/`).replace(/\.\w+$/, ".jpg");
+}
+
 export async function uploadToCloudinary(
   file: File,
   onProgress?: (percent: number) => void

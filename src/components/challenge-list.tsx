@@ -32,7 +32,7 @@ export function ChallengeList({
               size="sm"
               onClick={() => onPick(c.id)}
               aria-label={`Subir foto para: ${c.label}`}
-              className="mt-2 w-full bg-indigo-600 hover:bg-indigo-500"
+              className="mt-2 h-11 w-full text-sm bg-indigo-600 text-white hover:bg-indigo-500"
             >
               <Camera className="size-4" />
               Subir esta
@@ -45,7 +45,7 @@ export function ChallengeList({
           <FreeBadge className="w-11 shrink-0 text-center" />
           <div className="min-w-0 flex-1">
             <p className="text-sm leading-snug text-zinc-300">{FREE_PHOTO.label}</p>
-            <p className="text-xs leading-snug text-zinc-500">{FREE_PHOTO.hint}</p>
+            <p className="text-xs leading-snug text-zinc-400">{FREE_PHOTO.hint}</p>
           </div>
         </div>
         {onPick && (
@@ -59,7 +59,7 @@ export function ChallengeList({
                 ? "Subir una foto libre"
                 : `Ya subiste tus ${MAX_FREE_PHOTOS_PER_USER} fotos libres`
             }
-            className="mt-2 w-full bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+            className="mt-2 h-11 w-full text-sm bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
           >
             <Camera className="size-4" />
             {pickable.free ? "Subir una libre" : `Ya subiste tus ${MAX_FREE_PHOTOS_PER_USER} libres`}

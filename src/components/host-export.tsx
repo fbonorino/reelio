@@ -25,7 +25,7 @@ export function HostExport({ hostKey }: { hostKey: string }) {
 
   return (
     <section className="grid min-w-0 gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
-      <Button onClick={() => setOpen(true)} disabled={open} variant="secondary" className="h-11 sm:h-8">
+      <Button onClick={() => setOpen(true)} disabled={open} variant="secondary" className="h-11 sm:pointer-fine:h-8">
         <Download className="size-4" />
         Descargar todo (ZIP)
       </Button>
@@ -34,7 +34,7 @@ export function HostExport({ hostKey }: { hostKey: string }) {
           <Loader2 className="mx-auto size-5 animate-spin text-zinc-500" />
         ) : (
           <div className="grid gap-3 text-sm">
-            <p className="text-zinc-500">
+            <p className="text-zinc-400">
               Archivos originales en máxima calidad, incluidas las invalidadas. Fotos y videos van en
               ZIPs separados y, si son muchos, en varias partes: bajá cada una y esperá a que termine
               antes de la siguiente.
@@ -45,7 +45,7 @@ export function HostExport({ hostKey }: { hostKey: string }) {
                   {kind === "image" ? "Fotos" : "Videos"} ({count})
                 </span>
                 {count === 0 ? (
-                  <span className="text-zinc-500">No hay.</span>
+                  <span className="text-zinc-400">No hay.</span>
                 ) : (
                   <div className="grid gap-3 sm:flex sm:flex-wrap sm:gap-2">
                     {Array.from({ length: parts }, (_, i) => (
@@ -53,7 +53,7 @@ export function HostExport({ hostKey }: { hostKey: string }) {
                         key={i}
                         asChild
                         size="sm"
-                        className="h-11 bg-indigo-600 text-sm hover:bg-indigo-500 sm:h-7 sm:text-[0.8rem]"
+                        className="h-11 bg-indigo-600 text-white text-sm hover:bg-indigo-500 sm:pointer-fine:h-7 sm:text-[0.8rem]"
                       >
                         <a href={`/api/host/export?${keyParam}&kind=${kind}&part=${i + 1}`} download>
                           <Download className="size-4" />

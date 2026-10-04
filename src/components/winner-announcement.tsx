@@ -48,7 +48,8 @@ export function GameOver({
   instagram: string | null | undefined;
   preview: WinnerPreview | null;
 }) {
-  const { data } = useLeaderboard();
+  // Nothing to announce while the game runs, so don't poll the ranking for every guest all night.
+  const { data } = useLeaderboard(ended || !!preview);
   const [seen] = useState(readSeen);
   const [dismissed, setDismissed] = useState(false);
   const [reopened, setReopened] = useState(false);
@@ -109,7 +110,7 @@ function Announcement({
             variant="ghost"
             size="icon-lg"
             aria-label="Cerrar"
-            className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 rounded-full bg-zinc-900/70 text-zinc-300 hover:text-zinc-50"
+            className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-10 size-11 rounded-full bg-zinc-900/70 text-zinc-300 hover:text-zinc-50"
           >
             <XIcon className="size-5" />
           </Button>

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FreeBadge, KeepsakeBadge, PointsBadge } from "@/components/photo-meta";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { useBackToClose } from "@/hooks/use-back-to-close";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { uploadToCloudinary, type CloudinaryUploadResult } from "@/lib/cloudinary-client";
 import { fireConfetti } from "@/lib/confetti";
@@ -100,6 +101,9 @@ export function UploadFlow({
   const limitReached = remaining === 0 && freeRemaining === 0;
   const pick = getPick(challengeId);
   const pickIsFree = pick?.points === null;
+
+  // Android's Back closes the flow instead of leaving the app; mid-upload it does nothing.
+  useBackToClose(open, () => setOpen(false), { dismissible: !uploading });
 
   // Move focus to the new step's title so keyboard and screen reader users follow along.
   useEffect(() => {
@@ -256,7 +260,7 @@ export function UploadFlow({
         onChange={handleFileSelect}
       />
 
-      <div className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1.5">
+      <div className="fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.5rem))] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1.5">
         <Button
           ref={fabRef}
           size="lg"
@@ -272,7 +276,7 @@ export function UploadFlow({
               : "Subir consigna"}
         </Button>
         {instagram && (
-          <span className="rounded-full bg-zinc-950/80 px-2.5 py-0.5 text-xs text-zinc-400 backdrop-blur">
+          <span className="max-w-[calc(100vw-2rem)] text-balance rounded-full bg-zinc-950/80 px-2.5 py-0.5 text-center text-xs text-zinc-300 backdrop-blur">
             {limitReached
               ? ended
                 ? `Usaste tus ${MAX_PHOTOS_PER_USER} fotos`
@@ -556,7 +560,7 @@ function ChallengeOption({
           {pick.label}
         </span>
         {(disabledReason ?? hint) && (
-          <span className="flex items-center gap-1 text-xs leading-snug text-zinc-500">
+          <span className="flex items-center gap-1 text-xs leading-snug text-zinc-400">
             {disabled && <Ban className="size-3 shrink-0" aria-hidden />}
             {disabledReason ?? hint}
           </span>
@@ -586,10 +590,10 @@ function SelectedChallenge({
         pick.points !== null && <PointsBadge points={pick.points} className="w-11 shrink-0 text-center" />
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[0.7rem] font-medium uppercase tracking-wider text-zinc-500">Consigna</p>
+        <p className="text-[0.7rem] font-medium uppercase tracking-wider text-zinc-400">Consigna</p>
         <p className="text-sm leading-snug text-zinc-100">{pick.label}</p>
         {/* After the close the keepsake banner already says so. */}
-        {free && !ended && <p className="text-xs text-zinc-500">No suma puntos</p>}
+        {free && !ended && <p className="text-xs text-zinc-400">No suma puntos</p>}
       </div>
       {onChange && (
         <Button

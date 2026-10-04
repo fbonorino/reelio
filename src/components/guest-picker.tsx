@@ -63,7 +63,7 @@ export function GuestPicker({
           spellCheck={false}
           placeholder="Buscá tu usuario"
           showTrigger={false}
-          className="h-10 w-full border-zinc-700 bg-zinc-950"
+          className="h-11 w-full border-zinc-700 bg-zinc-950"
         >
           <InputGroupAddon align="inline-start">
             <AtSign className="text-zinc-500" />
@@ -90,16 +90,16 @@ export function GuestPicker({
       </Combobox>
 
       {!searching ? (
-        <p className="text-sm text-zinc-500">Escribí al menos 2 letras de tu usuario.</p>
+        <p className="text-sm text-zinc-400">Escribí al menos 2 letras de tu usuario.</p>
       ) : handles.length === 0 && isValidating ? (
-        <p className="flex items-center gap-2 text-sm text-zinc-500">
+        <p className="flex items-center gap-2 text-sm text-zinc-400">
           <Loader2 className="size-4 animate-spin" />
           Buscando…
         </p>
       ) : handles.length === 0 && data ? (
         <p className="text-sm text-rose-400">No estás en la lista, avisale a Fran.</p>
       ) : !value ? (
-        <p className="text-sm text-zinc-500">Tocá tu usuario en la lista.</p>
+        <p className="text-sm text-zinc-400">Tocá tu usuario en la lista.</p>
       ) : null}
     </div>
   );

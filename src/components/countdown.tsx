@@ -28,8 +28,10 @@ export function Countdown() {
     return () => clearInterval(interval);
   }, []);
 
-  // `now` is null until mounted, which avoids a server/client time mismatch.
-  if (!eventEnd || now === null) return null;
+  if (!eventEnd) return null;
+  // `now` is null until mounted, which avoids a server/client time mismatch. The line's height is
+  // held meanwhile so the tabs and feed don't jump down when it appears.
+  if (now === null) return <div className="mb-3 h-5" aria-hidden />;
 
   const remaining = eventEnd.getTime() - now;
 

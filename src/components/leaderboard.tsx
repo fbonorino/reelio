@@ -27,7 +27,7 @@ export function Leaderboard() {
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-24 text-center text-zinc-500">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-24 text-center text-zinc-400">
         <Trophy className="size-10" />
         <p className="text-base font-medium text-zinc-300">El ranking está vacío</p>
         <p className="text-sm">Subí la primera consigna y quedate con el primer puesto.</p>
@@ -36,7 +36,7 @@ export function Leaderboard() {
   }
 
   return (
-    <ol className="space-y-2 p-3 pb-32">
+    <ol className="space-y-2 p-3 pb-[calc(8rem+env(safe-area-inset-bottom))]">
       {entries.map((entry) => {
         const isMe = entry.instagram === myInstagram;
         return (
@@ -58,14 +58,14 @@ export function Leaderboard() {
             </span>
             <div className="min-w-0 flex-1">
               <InstagramLink handle={entry.instagram} className="block text-sm" />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-400">
                 {entry.photoCount} {entry.photoCount === 1 ? "foto" : "fotos"}
                 {isMe && " · vos"}
               </p>
             </div>
             <span className="shrink-0 font-display text-2xl tracking-wide text-zinc-50">
               {entry.score}
-              <span className="ml-1 font-sans text-xs text-zinc-500">pts</span>
+              <span className="ml-1 font-sans text-xs text-zinc-400">pts</span>
             </span>
           </li>
         );

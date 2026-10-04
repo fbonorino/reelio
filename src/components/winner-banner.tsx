@@ -32,7 +32,7 @@ export function WinnerBanner({
             <Button
               size="sm"
               onClick={onShowWinner}
-              className="mt-2 bg-amber-400 font-semibold text-zinc-950 hover:bg-amber-300"
+              className="mt-2 h-11 px-4 text-sm bg-amber-400 font-semibold text-zinc-950 hover:bg-amber-300"
             >
               Ver ganador
             </Button>
