@@ -32,6 +32,9 @@ const RETIRED_CHALLENGES: Pick<Challenge, "id" | "label">[] = [
 
 export const MAX_PHOTOS_PER_USER = 5;
 
+/** Each like a game photo receives adds this to its uploader's score. */
+export const POINTS_PER_LIKE = 1;
+
 /**
  * "Foto libre": any photo of the night, open during and after the game. Never scores: no
  * challenge points, and its likes count for nobody. Has its own cap, separate from the

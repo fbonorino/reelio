@@ -1,0 +1,189 @@
+/* Poster v2, "points board". Scoped to .poster-v2 so poster 1 and the QR poster are untouched.
+   Sizes in mm: the sheet is a fixed A3, so they map 1:1 to paper. */
+
+.poster-sheet.poster-v2 {
+  --bg: #0c0a0a;
+  --fg: #f3eee6;
+  --muted: #b8b0a4;
+  --line: rgba(243, 238, 230, 0.24);
+
+  padding: 13mm 15mm 11mm;
+}
+
+/* Default for this poster: prints better and uses less ink. */
+.poster-root[data-theme="light"] .poster-sheet.poster-v2 {
+  --bg: #f3eee6;
+  --fg: #0c0a0a;
+  --muted: #3b3632;
+  --line: rgba(12, 10, 10, 0.24);
+}
+
+.poster-v2 .v2-label {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 3.4mm;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.poster-v2 .v2-header,
+.poster-v2 .v2-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6mm;
+}
+
+.poster-v2 .v2-header {
+  padding-bottom: 3mm;
+  border-bottom: 0.5mm solid var(--line);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 4mm;
+  letter-spacing: 0.14em;
+}
+
+.poster-v2 .v2-title {
+  margin: 6mm 0 0;
+  text-align: center;
+  font-weight: 800;
+  font-size: 30mm;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+}
+
+.poster-v2 .v2-accent {
+  color: var(--accent);
+}
+
+/* --- Hero QR: reuses the shared plate, sized and squared off for this layout --- */
+
+.poster-v2 .v2-qr {
+  display: flex;
+  justify-content: center;
+  margin-top: 7mm;
+}
+
+/* Outranks poster 1's light-theme outline whatever the stylesheet order: the white plate is edge enough on cream. */
+.poster-root .poster-v2.poster-v2 .poster-qr {
+  gap: 2mm;
+  padding: 5mm 5mm 4.5mm;
+  border-radius: 3mm;
+  outline: none;
+}
+
+.poster-v2 .poster-qr-url {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 1.5mm;
+  font-size: 3.6mm;
+}
+
+.poster-v2 .poster-qr-caption {
+  font-family: var(--display);
+  font-size: 4.8mm;
+  letter-spacing: 0;
+}
+
+/* --- Points board: number, challenge, bar --- */
+
+.poster-v2 .v2-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 8mm;
+}
+
+.poster-v2 .v2-board ol {
+  flex: 1;
+  list-style: none;
+  margin: 2mm 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.poster-v2 .v2-board li {
+  display: grid;
+  grid-template-columns: 17mm 1fr 72mm;
+  align-items: center;
+  column-gap: 5mm;
+  min-height: 10mm;
+}
+
+.poster-v2 .v2-points {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 8mm;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 18pt = 6.35mm, the minimum for reading at a distance. */
+.poster-v2 .v2-challenge {
+  font-size: 6.4mm;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.poster-v2 .v2-bar-track {
+  display: block;
+  height: 4.5mm;
+}
+
+.poster-v2 .v2-bar {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.poster-v2 .v2-rules li {
+  grid-template-columns: 17mm 1fr;
+}
+
+/* --- Facts strip --- */
+
+.poster-v2 .v2-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5mm;
+  margin-top: 8mm;
+  padding: 6mm 0 5mm;
+  border-top: 0.5mm solid var(--line);
+  border-bottom: 0.5mm solid var(--line);
+}
+
+.poster-v2 .v2-facts div {
+  display: grid;
+  justify-items: start;
+  gap: 1.5mm;
+}
+
+.poster-v2 .v2-icon {
+  width: 7mm;
+  height: 7mm;
+}
+
+.poster-v2 .v2-facts strong {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 13mm;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+/* --- Footer --- */
+
+.poster-v2 .v2-footer {
+  margin-top: 5mm;
+  font-size: 5mm;
+  font-weight: 700;
+}
+
+.poster-v2 .v2-footer .v2-label {
+  white-space: nowrap;
+}

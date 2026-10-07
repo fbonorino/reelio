@@ -5,7 +5,15 @@ import { displayUrl, getPublicAppUrl } from "@/lib/public-url";
  * The real, scannable QR to the app on a white plate, with the URL printed below as a fallback.
  * If the public URL isn't configured it renders a loud error instead, so a wrong QR never gets printed.
  */
-export function PosterQr({ size }: { size: number }) {
+export function PosterQr({
+  size,
+  caption,
+}: {
+  /** Plate width: px as a number, or any CSS length ("140mm"). */
+  size: number | string;
+  /** Printed on the URL's line, before it. */
+  caption?: string;
+}) {
   const publicUrl = getPublicAppUrl();
 
   if ("error" in publicUrl) {
@@ -29,7 +37,10 @@ export function PosterQr({ size }: { size: number }) {
         <rect width={qr.size} height={qr.size} fill="#fff" />
         <path d={qr.d} fill="#000" />
       </svg>
-      <span className="poster-qr-url">{displayUrl(publicUrl.url)}</span>
+      <span className="poster-qr-url">
+        {caption && <span className="poster-qr-caption">{caption} · </span>}
+        {displayUrl(publicUrl.url)}
+      </span>
     </div>
   );
 }

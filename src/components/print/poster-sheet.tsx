@@ -16,7 +16,7 @@ export function PosterSheet({
   return (
     <div className="poster-root" data-theme={theme} style={accent ? ({ "--accent": accent } as React.CSSProperties) : undefined}>
       <Suspense fallback={null}>
-        <PrintToolbar />
+        <PrintToolbar theme={theme} />
       </Suspense>
       <article className={`poster-sheet ${className ?? ""}`}>{children}</article>
     </div>

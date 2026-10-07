@@ -2,29 +2,38 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import type { PosterThemeName } from "@/lib/poster";
 
 /** Screen-only: switch poster or theme and print. Hidden on paper. */
-export function PrintToolbar() {
+const POSTERS = [
+  { path: "/print/afiche", label: "Afiche" },
+  { path: "/print/afiche-v2", label: "Afiche v2" },
+  { path: "/print/qr", label: "Solo QR" },
+];
+
+/** `theme` is what this page resolved to (posters have different defaults), so links keep it explicit. */
+export function PrintToolbar({ theme }: { theme: PosterThemeName }) {
   const pathname = usePathname();
   const params = useSearchParams();
-  const light = params.get("theme") === "light";
+  const light = theme === "light";
 
-  function href(path: string, theme: "light" | "dark") {
-    const next = new URLSearchParams(params);
-    if (theme === "light") next.set("theme", "light");
-    else next.delete("theme");
-    const qs = next.toString();
-    return qs ? `${path}?${qs}` : path;
+  function href(path: string, next: PosterThemeName) {
+    const query = new URLSearchParams(params);
+    query.set("theme", next);
+    return `${path}?${query}`;
   }
 
   return (
     <nav className="poster-toolbar" aria-label="Opciones de impresión">
-      <Link href={href("/print/afiche", light ? "light" : "dark")} aria-current={pathname === "/print/afiche" ? "page" : undefined}>
-        Afiche
-      </Link>
-      <Link href={href("/print/qr", light ? "light" : "dark")} aria-current={pathname === "/print/qr" ? "page" : undefined}>
-        Solo QR
-      </Link>
+      {POSTERS.map((poster) => (
+        <Link
+          key={poster.path}
+          href={href(poster.path, theme)}
+          aria-current={pathname === poster.path ? "page" : undefined}
+        >
+          {poster.label}
+        </Link>
+      ))}
       <Link href={href(pathname, light ? "dark" : "light")}>{light ? "Oscuro" : "Claro (ahorra tinta)"}</Link>
       <button type="button" onClick={() => window.print()}>
         Imprimir A3
