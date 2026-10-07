@@ -1,0 +1,133 @@
+/* Rules-only poster. Builds on poster v2's scoped styles (header, title, QR plate, theme colors);
+   everything here is under .poster-reglas so neither poster changes the other.
+   Rule text is never under 20pt (7.06mm) on A3. */
+
+.poster-reglas .rg-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  margin-top: 4mm;
+}
+
+/* --- Three steps --- */
+
+.poster-reglas .rg-steps {
+  list-style: none;
+  margin: 2mm 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6mm;
+}
+
+.poster-reglas .rg-steps li {
+  display: flex;
+  align-items: center;
+  gap: 3.5mm;
+}
+
+.poster-reglas .rg-step-num {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22mm;
+  line-height: 0.85;
+  color: var(--accent);
+}
+
+.poster-reglas .rg-step-icon {
+  flex: none;
+  width: 9mm;
+  height: 9mm;
+}
+
+.poster-reglas .rg-step-word {
+  font-weight: 800;
+  font-size: 11mm;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* --- Three facts: number first, it's what reads from across the room --- */
+
+.poster-reglas .rg-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6mm;
+}
+
+.poster-reglas .rg-tiles li {
+  display: grid;
+  gap: 1.5mm;
+  align-content: start;
+}
+
+.poster-reglas .rg-tiles strong {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24mm;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.poster-reglas .rg-tiles span {
+  font-weight: 700;
+  font-size: 7.2mm;
+  line-height: 1.1;
+}
+
+/* --- Accent strip, full bleed --- */
+
+.poster-reglas .rg-strip {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8mm;
+  margin: 0 -15mm;
+  padding: 6mm 15mm;
+  background: var(--accent);
+  color: #0c0a0a;
+}
+
+.poster-reglas .rg-strip strong {
+  flex: none;
+  font-weight: 800;
+  font-size: 13mm;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.poster-reglas .rg-strip span {
+  font-weight: 700;
+  font-size: 7.2mm;
+  line-height: 1.15;
+  text-align: right;
+}
+
+/* --- Hook --- */
+
+.poster-reglas .rg-hook {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4mm;
+  margin: 0;
+  font-weight: 800;
+  font-size: 10mm;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.poster-reglas .rg-hook-icon {
+  flex: none;
+  width: 14mm;
+  height: 14mm;
+}
+
+.poster-reglas .v2-footer {
+  margin-top: 4mm;
+}

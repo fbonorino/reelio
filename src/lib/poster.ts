@@ -46,6 +46,18 @@ export function posterGame() {
       "Si la foto no cumple la consigna, perdés esos puntos.",
       `${closes ? `A las ${closes}` : "Al final de la noche"} se cierra el juego y gana el que tenga más puntos.`,
     ],
+    // Every word of the rules-only poster (/print/afiche-reglas). Edit the tone here, nowhere else.
+    posterRules: {
+      steps: ["Elegí", "Sacá", "Subí"],
+      tiles: [
+        { value: String(MAX_PHOTOS_PER_USER), label: "fotos. Jugalas bien." },
+        { value: `+${POINTS_PER_LIKE}`, label: "cada like" },
+        { value: closes ?? "Cierre", label: "fin del juego" },
+      ],
+      prize: "Gana el #1.",
+      invalid: "Foto que no cumple: se van los puntos.",
+      hook: "Las consignas te esperan adentro.",
+    },
     rules: [
       `máx. ${MAX_PHOTOS_PER_USER} fotos por persona`,
       "los likes suman",

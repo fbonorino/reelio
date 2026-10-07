@@ -8,6 +8,7 @@ import type { PosterThemeName } from "@/lib/poster";
 const POSTERS = [
   { path: "/print/afiche", label: "Afiche" },
   { path: "/print/afiche-v2", label: "Afiche v2" },
+  { path: "/print/afiche-reglas", label: "Solo reglas" },
   { path: "/print/qr", label: "Solo QR" },
 ];
 
