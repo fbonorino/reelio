@@ -54,23 +54,31 @@ export default async function PosterPage({ searchParams }: PageProps<"/print/afi
         </div>
       </section>
 
-      <section className="poster-challenges">
-        <h2 className="poster-mono poster-muted">
-          Consignas
-          {game.otherChallenges > 0 && <span> · +{game.otherChallenges} más en la app</span>}
-        </h2>
-        <ul>
-          {game.topChallenges.map((c) => (
-            <li key={c.id}>
-              <span className="poster-challenge-label">{c.label}</span>
-              <span className="poster-challenge-points">
-                {c.points}
-                <small className="poster-mono">pts</small>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {game.challenges ? (
+        <section className="poster-challenges">
+          <h2 className="poster-mono poster-muted">Consignas</h2>
+          <ul>
+            {game.challenges.map((c) => (
+              <li key={c.id}>
+                <span className="poster-challenge-label">{c.label}</span>
+                <span className="poster-challenge-points">
+                  {c.points}
+                  <small className="poster-mono">pts</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section className="poster-rules">
+          <h2 className="poster-mono poster-muted">Reglas del juego</h2>
+          <ul>
+            {game.gameRules.map((rule) => (
+              <li key={rule}>{rule}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="poster-strip poster-mono">
         {game.rules.map((rule, i) => (

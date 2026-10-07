@@ -25,12 +25,24 @@ function closingTime() {
   });
 }
 
+/** How many challenge cards fit on the A3 poster (a 3×3 grid). */
+const POSTER_CHALLENGE_SLOTS = 9;
+
 /** Everything the posters say about the game, read from the same config the app enforces. */
 export function posterGame() {
   const closes = closingTime();
   return {
-    topChallenges: CHALLENGES_BY_POINTS.slice(0, 4),
-    otherChallenges: Math.max(0, CHALLENGES_BY_POINTS.length - 4),
+    // All of them or none: a partial list would read as the whole game.
+    challenges:
+      CHALLENGES_BY_POINTS.length <= POSTER_CHALLENGE_SLOTS ? CHALLENGES_BY_POINTS : null,
+    // Shown instead of the challenges when they don't fit.
+    gameRules: [
+      "Elegí una consigna, cumplila y subí la foto que lo demuestre.",
+      `Tenés ${MAX_PHOTOS_PER_USER} fotos en total: pensá bien en qué consignas las gastás.`,
+      "Cada like que te den en tus fotos es +1 punto.",
+      "Si la foto no cumple la consigna, perdés esos puntos.",
+      `${closes ? `A las ${closes}` : "Al final de la noche"} se cierra el juego y gana el que tenga más puntos.`,
+    ],
     rules: [
       `máx. ${MAX_PHOTOS_PER_USER} fotos por persona`,
       "los likes suman",
