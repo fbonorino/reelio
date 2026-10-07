@@ -9,10 +9,10 @@ export const CHALLENGES: Challenge[] = [
   { id: "chicle", label: "Foto globo con chicle", points: 4 },
   { id: "pelado", label: "Foto con un pelado", points: 7 },
   { id: "vaso", label: "Foto haciendo equilibrio con un vaso en la cabeza", points: 10 },
-  { id: "piso", label: "Foto acostado en el piso del boliche", points: 14 },
+  { id: "piso", label: "Foto acostado en el piso del boliche", points: 28 },
   { id: "zapato", label: "Foto con el zapato de un desconocido", points: 18 },
   { id: "patova", label: "Foto abrazando un patova", points: 22 },
-  { id: "desconocidas", label: "Selfie con +5 desconocid@s", points: 28 },
+  { id: "desconocidas", label: "Selfie con +5 desconocid@s", points: 14 },
   { id: "colorado", label: "Foto besándole la frente a un/a colorad@", points: 42 },
   { id: "propuesta", label: "Foto propuesta de matrimonio", points: 32 },
 ];
