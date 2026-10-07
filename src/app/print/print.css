@@ -1,0 +1,373 @@
+/* Printable A3 posters. Everything is scoped to .poster-root so it can't leak into the app. */
+
+@page {
+  size: A3 portrait;
+  margin: 0;
+}
+
+.poster-root {
+  --bg: #0c0a0a;
+  --fg: #f3eee6;
+  --muted: #b8b0a4;
+  --accent: #ff5a36;
+  --on-accent: #0c0a0a;
+  --line: rgba(243, 238, 230, 0.24);
+  --display: var(--font-poster-display), system-ui, sans-serif;
+  --mono: var(--font-poster-mono), ui-monospace, monospace;
+
+  min-height: 100dvh;
+  background: #3a3734;
+  padding: 72px 24px 48px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Saves ink at the print shop: black on white, accent kept for the few lines that use it. */
+.poster-root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #000000;
+  --muted: #444444;
+  --line: rgba(0, 0, 0, 0.24);
+}
+
+/* The app's film-grain overlay would print as a grey haze. */
+body:has(.poster-root) .app-grain {
+  display: none;
+}
+
+.poster-sheet {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  width: 297mm;
+  height: 420mm;
+  margin: 0 auto;
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--display);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.poster-mono {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.poster-muted {
+  color: var(--muted);
+}
+
+.poster-accent {
+  color: var(--accent);
+}
+
+.poster-header,
+.poster-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+}
+
+.poster-header {
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--line);
+}
+
+.poster-footer {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 2px solid var(--line);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.poster-footer .poster-mono {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.poster-title {
+  margin: 0;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+/* --- Poster 1: QR + rules --- */
+
+.poster-bignum {
+  position: absolute;
+  z-index: -1;
+  top: 40px;
+  right: -60px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 760px;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 3px var(--line);
+}
+
+.poster-main .poster-title {
+  margin-top: 64px;
+  font-size: 132px;
+}
+
+.poster-play {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  margin-top: 64px;
+}
+
+.poster-steps {
+  flex: 1;
+  min-width: 0;
+}
+
+.poster-steps ol {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 24px;
+}
+
+.poster-steps li {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.poster-step-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.poster-steps strong {
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.poster-steps p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.poster-challenges {
+  margin-top: 56px;
+}
+
+.poster-challenges ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.poster-challenges li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 112px;
+  padding: 20px 24px;
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  background: var(--bg);
+}
+
+.poster-challenge-label {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.poster-challenge-points {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.poster-challenge-points small {
+  font-size: 16px;
+}
+
+.poster-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 48px -64px 0;
+  padding: 28px 64px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+/* The strip already closes the content, so the footer needs no rule of its own. */
+.poster-main .poster-footer {
+  border-top: 0;
+}
+
+.poster-root[data-theme="light"] .poster-strip {
+  background: transparent;
+  color: var(--fg);
+  border-block: 4px solid var(--accent);
+}
+
+/* --- Poster 2: just the QR --- */
+
+.poster-qr-only {
+  align-items: center;
+  text-align: center;
+}
+
+.poster-title-qr {
+  margin-top: 56px;
+  font-size: 128px;
+}
+
+.poster-qr-only .poster-qr {
+  margin: auto 0;
+}
+
+.poster-qr-only .poster-footer {
+  align-self: stretch;
+  margin-top: 0;
+}
+
+/* --- QR plate --- */
+
+.poster-qr {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 16px;
+  border-radius: 28px;
+  background: #fff;
+  color: #000;
+}
+
+.poster-root[data-theme="light"] .poster-qr {
+  outline: 2px solid var(--line);
+}
+
+.poster-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.poster-qr-url {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.poster-qr-error {
+  aspect-ratio: 1;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: #fff1ee;
+  color: #b42318;
+  outline: 6px dashed #b42318;
+  font-family: var(--mono);
+  font-size: 18px;
+  text-align: center;
+}
+
+/* --- Screen-only toolbar --- */
+
+.poster-toolbar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  max-width: calc(100vw - 32px);
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(12, 10, 10, 0.9);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.poster-toolbar a,
+.poster-toolbar button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #f3eee6;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.poster-toolbar a[aria-current="page"] {
+  background: rgba(243, 238, 230, 0.16);
+}
+
+.poster-toolbar button {
+  background: var(--accent);
+  color: #0c0a0a;
+}
+
+@media print {
+  body:has(.poster-root) {
+    background: none;
+  }
+
+  .poster-root {
+    min-height: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .poster-toolbar {
+    display: none;
+  }
+
+  .poster-sheet {
+    box-shadow: none;
+    break-after: avoid;
+  }
+}

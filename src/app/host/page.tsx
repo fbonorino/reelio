@@ -8,6 +8,7 @@ import { Loader2, MinusCircle, Play, RotateCcw, ShieldAlert, Trash2 } from "luci
 import { Button } from "@/components/ui/button";
 import { HostExport } from "@/components/host-export";
 import { HostGuests } from "@/components/host-guests";
+import { HostAccessRequests } from "@/components/host-access-requests";
 import {
   ChallengeLabel,
   InstagramLink,
@@ -106,6 +107,10 @@ function HostView() {
 
       <main>
         <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-2 lg:items-start">
+          {/* First, so on a phone it's what's on screen when the panel opens. */}
+          <div className="lg:col-span-2">
+            <HostAccessRequests hostKey={key} />
+          </div>
           <HostGuests hostKey={key} />
           <HostExport hostKey={key} />
         </div>

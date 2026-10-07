@@ -1,0 +1,50 @@
+import { CHALLENGES_BY_POINTS, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
+import { getEventEnd } from "@/lib/event";
+import { PRIZE_LABEL } from "@/lib/prize";
+
+/** The party itself; nothing in the app needs these, only the printed posters. */
+export const POSTER_EVENT = {
+  tagline: "FRAN 25 · SÁB 10.10 · PREVIA 23 HS",
+  brand: "REELIO",
+  bigNumber: "25",
+  host: "Franco",
+};
+
+/** Same zone as NEXT_PUBLIC_EVENT_END_TIME's offset, so the server prints the party's local time. */
+const EVENT_TIME_ZONE = "America/Argentina/Buenos_Aires";
+
+/** "4 AM", or "4:30 AM", from the real end time. Null when the game has no end time set. */
+function closingTime() {
+  const end = getEventEnd();
+  if (!end) return null;
+  const minutes = end.getUTCMinutes();
+  return end.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: minutes ? "2-digit" : undefined,
+    timeZone: EVENT_TIME_ZONE,
+  });
+}
+
+/** Everything the posters say about the game, read from the same config the app enforces. */
+export function posterGame() {
+  const closes = closingTime();
+  return {
+    topChallenges: CHALLENGES_BY_POINTS.slice(0, 4),
+    otherChallenges: Math.max(0, CHALLENGES_BY_POINTS.length - 4),
+    rules: [
+      `máx. ${MAX_PHOTOS_PER_USER} fotos por persona`,
+      "los likes suman",
+      closes ? `hasta las ${closes}` : "hasta el cierre",
+      PRIZE_LABEL,
+    ],
+  };
+}
+
+/** `?theme=light` prints black on white to save ink; `?accent=ff5a36` swaps the accent color. */
+export function posterTheme(params: { theme?: string | string[]; accent?: string | string[] }) {
+  const accent = typeof params.accent === "string" ? params.accent.replace(/^#/, "") : "";
+  return {
+    theme: params.theme === "light" ? "light" : "dark",
+    accent: /^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(accent) ? `#${accent}` : undefined,
+  } as const;
+}

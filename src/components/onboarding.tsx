@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
 import { ChallengeList } from "@/components/challenge-list";
 import { GameRules } from "@/components/game-rules";
 import { GuestPicker } from "@/components/guest-picker";
+import { PendingAccess, readPendingHandle, requestAccess } from "@/components/access-request";
 import { GameOverNotice } from "@/components/winner-banner";
 import { useEventEnded } from "@/hooks/use-event-ended";
 import { saveInstagram } from "@/lib/profile";
@@ -46,9 +48,23 @@ const FOOTER = "sticky -bottom-4 z-10 gap-2 bg-zinc-900";
  * The first two steps are skipped once seen. Reopens if the saved handle is removed from the list.
  */
 export function Onboarding({ open }: { open: boolean }) {
-  const [step, setStep] = useState<Step>(() => (readIntroSeen() ? "handle" : "rules"));
+  // Asked for access on this device and still waiting: straight back to the waiting screen.
+  const [pending, setPending] = useState<string | null>(() => readPendingHandle());
+  const [step, setStep] = useState<Step>(() =>
+    readIntroSeen() || pending ? "handle" : "rules"
+  );
   // Only ever set by picking a match from the guest list.
   const [handle, setHandle] = useState<string | null>(null);
+
+  async function handleRequestAccess(requested: string) {
+    try {
+      const status = await requestAccess(requested);
+      // "approved" means they're already in and this dialog is closing.
+      if (status !== "approved") setPending(requested);
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "No se pudo pedir acceso, probá de nuevo");
+    }
+  }
   const ended = useEventEnded();
 
   function handleSubmit(e: React.FormEvent) {
@@ -141,6 +157,16 @@ export function Onboarding({ open }: { open: boolean }) {
               </Button>
             </DialogFooter>
           </>
+        ) : pending ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl uppercase tracking-wide">
+                Pedido enviado
+              </DialogTitle>
+              <DialogDescription className="sr-only">Esperando que te aprueben</DialogDescription>
+            </DialogHeader>
+            <PendingAccess handle={pending} onCancel={() => setPending(null)} />
+          </>
         ) : (
           <form onSubmit={handleSubmit} className="grid gap-4">
             <DialogHeader>
@@ -152,7 +178,7 @@ export function Onboarding({ open }: { open: boolean }) {
                 {ended ? "Va a aparecer en tus fotos." : "Va a aparecer en tus fotos y en el ranking."}
               </DialogDescription>
             </DialogHeader>
-            <GuestPicker value={handle} onChange={setHandle} />
+            <GuestPicker value={handle} onChange={setHandle} onRequestAccess={handleRequestAccess} />
             <DialogFooter className={FOOTER}>
               <Button
                 type="button"

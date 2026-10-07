@@ -3,8 +3,10 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { AtSign, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Combobox, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { InputGroupAddon } from "@/components/ui/input-group";
+import { cleanInstagramInput, normalizeInstagram } from "@/lib/instagram";
 
 const MIN_QUERY_LENGTH = 2;
 
@@ -18,12 +20,18 @@ const fetcher = (url: string) =>
 export function GuestPicker({
   value,
   onChange,
+  onRequestAccess,
 }: {
   value: string | null;
   onChange: (handle: string | null) => void;
+  /** Offered when nothing matches what they typed. */
+  onRequestAccess: (handle: string) => Promise<void>;
 }) {
   const [query, setQuery] = useState("");
-  const q = query.trim().replace(/^@+/, "").toLowerCase();
+  const [requesting, setRequesting] = useState(false);
+  // Same cleanup as the server's, so a pasted profile link searches by its handle.
+  const q = cleanInstagramInput(query);
+  const requestable = normalizeInstagram(q);
   const searching = q.length >= MIN_QUERY_LENGTH;
 
   const { data, isValidating } = useSWR(
@@ -97,7 +105,31 @@ export function GuestPicker({
           Buscando…
         </p>
       ) : handles.length === 0 && data ? (
-        <p className="text-sm text-rose-400">No estás en la lista, avisale a Fran.</p>
+        <div className="grid gap-3">
+          <p className="text-sm text-rose-400">
+            no encontramos ese usuario 🕯️ fijate que esté bien escrito (sin @). si seguís sin
+            entrar, avisale a franco y te suma.
+          </p>
+          {requestable && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={requesting}
+              onClick={async () => {
+                setRequesting(true);
+                try {
+                  await onRequestAccess(requestable);
+                } finally {
+                  setRequesting(false);
+                }
+              }}
+              className="h-11 text-base"
+            >
+              {requesting && <Loader2 className="size-4 animate-spin" />}
+              pedir acceso
+            </Button>
+          )}
+        </div>
       ) : !value ? (
         <p className="text-sm text-zinc-400">Tocá tu usuario en la lista.</p>
       ) : null}

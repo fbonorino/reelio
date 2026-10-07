@@ -60,3 +60,22 @@ model AllowedHandle {
   handle    String   @unique
   createdAt DateTime @default(now())
 }
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A guest who couldn't find their handle on the list and asked to be added. Approving it adds the
+/// handle to AllowedHandle; the guest's waiting screen notices and lets them in.
+model AccessRequest {
+  id        String              @id @default(cuid())
+  /// Normalized Instagram handle (lowercase, no "@"), same format as AllowedHandle.handle. One request per handle.
+  handle    String              @unique
+  status    AccessRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
+  decidedAt DateTime?
+
+  @@index([status, createdAt])
+}

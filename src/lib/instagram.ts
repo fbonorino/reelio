@@ -3,15 +3,23 @@ export const NOT_INVITED = "NOT_INVITED";
 
 const HANDLE_PATTERN = /^[a-z0-9._]{1,30}$/;
 
-/** Strips "@", spaces and a pasted profile URL, lowercases. Returns null if it isn't a valid handle. */
-export function normalizeInstagram(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const handle = raw
-    .trim()
-    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
-    .replace(/[/?].*$/, "")
+/**
+ * Strips spaces, a pasted profile URL (with or without "https://" or "www.") and "@", lowercases.
+ * No validation: also used on half-typed searches.
+ */
+export function cleanInstagramInput(raw: string) {
+  return raw
+    .replace(/\s+/g, "")
+    .replace(/^(https?:\/\/)?(www\.|m\.)?instagram\.com\//i, "")
+    .replace(/[/?#].*$/, "")
     .replace(/^@+/, "")
     .toLowerCase();
+}
+
+/** `cleanInstagramInput`, then null if it isn't a valid handle. */
+export function normalizeInstagram(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const handle = cleanInstagramInput(raw);
   return HANDLE_PATTERN.test(handle) ? handle : null;
 }
 

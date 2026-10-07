@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cleanInstagramInput } from "@/lib/instagram";
 
 const MIN_QUERY_LENGTH = 2;
 const MAX_RESULTS = 8;
@@ -9,7 +10,7 @@ const MAX_RESULTS = 8;
  * needs at least 2 characters and caps the results.
  */
 export async function GET(request: NextRequest) {
-  const q = (request.nextUrl.searchParams.get("q") ?? "").trim().replace(/^@+/, "").toLowerCase();
+  const q = cleanInstagramInput(request.nextUrl.searchParams.get("q") ?? "");
   // Handles only contain these characters, so anything else can't match.
   if (q.length < MIN_QUERY_LENGTH || !/^[a-z0-9._]+$/.test(q)) {
     return NextResponse.json({ handles: [] });

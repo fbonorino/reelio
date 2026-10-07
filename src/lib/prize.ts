@@ -1,5 +1,8 @@
 import type { LeaderboardEntry } from "@/lib/types";
 
+/** What the winner gets, as the posters announce it. */
+export const PRIZE_LABEL = "premio al #1";
+
 /** Play and stay on the scoreboard, but can't win the prize (the birthday boy hands it out). */
 export const EXCLUDED_FROM_PRIZE = ["fran_bonorino"];
 

@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
   for (const raw of body.text.split(/[\n,;]+/)) {
     const token = raw.trim();
     if (!token) continue;
-    const handle = normalizeInstagram(token);
+    // normalizeInstagram drops inner spaces (a phone keyboard's stray space), but in a list
+    // they're more likely two words that aren't a handle.
+    const handle = /\s/.test(token) ? null : normalizeInstagram(token);
     if (handle) handles.add(handle);
     else invalid.push(token);
   }
@@ -43,6 +45,11 @@ export async function POST(request: NextRequest) {
   const { count } = await prisma.allowedHandle.createMany({
     data: [...handles].map((handle) => ({ handle })),
     skipDuplicates: true,
+  });
+  // Anyone added here who was waiting on a request gets in, same as approving it.
+  await prisma.accessRequest.updateMany({
+    where: { handle: { in: [...handles] }, status: "PENDING" },
+    data: { status: "APPROVED", decidedAt: new Date() },
   });
 
   return NextResponse.json({ added: count, duplicates: handles.size - count, invalid });
