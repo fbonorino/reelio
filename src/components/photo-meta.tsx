@@ -1,5 +1,5 @@
 import { Ban, Camera } from "lucide-react";
-import { getChallengeLabel, isFreePhoto } from "@/lib/challenges";
+import { isFreePhoto } from "@/lib/challenges";
 import { instagramUrl } from "@/lib/instagram";
 import { cn } from "@/lib/utils";
 import type { Photo } from "@/lib/types";
@@ -52,7 +52,7 @@ export function PointsChip({ photo, className }: { photo: Photo; className?: str
 export function ChallengeLabel({ photo, className }: { photo: Photo; className?: string }) {
   return (
     <p className={cn("text-xs leading-snug text-zinc-400", className)}>
-      {getChallengeLabel(photo.challengeId) ?? photo.challengeId}
+      {photo.challengeLabel}
     </p>
   );
 }

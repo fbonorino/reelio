@@ -21,13 +21,13 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { uploadToCloudinary, type CloudinaryUploadResult } from "@/lib/cloudinary-client";
 import { fireConfetti } from "@/lib/confetti";
 import {
-  CHALLENGES_BY_POINTS,
   FREE_PHOTO,
-  getChallenge,
   isFreePhoto,
   MAX_FREE_PHOTOS_PER_USER,
   MAX_PHOTOS_PER_USER,
+  type Challenge,
 } from "@/lib/challenges";
+import { useChallenges } from "@/hooks/use-challenges";
 import { forgetIfNotInvited } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
@@ -51,10 +51,10 @@ type Pick = { id: string; label: string; points: number | null };
 
 const FREE_PICK: Pick = { id: FREE_PHOTO.id, label: FREE_PHOTO.label, points: null };
 
-function getPick(id: string | null): Pick | undefined {
+function getPick(id: string | null, challenges: Challenge[] | undefined): Pick | undefined {
   if (!id) return undefined;
   if (isFreePhoto(id)) return FREE_PICK;
-  return getChallenge(id);
+  return challenges?.find((c) => c.id === id);
 }
 
 export function UploadFlow({
@@ -85,7 +85,7 @@ export function UploadFlow({
   const uploadedRef = useRef<{ file: File; result: CloudinaryUploadResult } | null>(null);
 
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("challenge");
+  const [currentStep, setStep] = useState<Step>("challenge");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -99,7 +99,10 @@ export function UploadFlow({
   const remaining = Math.max(0, MAX_PHOTOS_PER_USER - photosUsed);
   const freeRemaining = Math.max(0, MAX_FREE_PHOTOS_PER_USER - freeUsed);
   const limitReached = remaining === 0 && freeRemaining === 0;
-  const pick = getPick(challengeId);
+  const challenges = useChallenges();
+  const pick = getPick(challengeId, challenges);
+  // The host took the picked challenge out of the game meanwhile: back to choosing one.
+  const step: Step = currentStep !== "challenge" && challenges && !pick ? "challenge" : currentStep;
   const pickIsFree = pick?.points === null;
 
   // Android's Back closes the flow instead of leaving the app; mid-upload it does nothing.
@@ -301,7 +304,6 @@ export function UploadFlow({
             <StepDots current={STEPS[step].number} />
             <span>
               Paso {STEPS[step].number} de 3
-              {step === "challenge" && !ended && " · de más a menos puntos"}
             </span>
           </>
         }
@@ -341,7 +343,7 @@ export function UploadFlow({
 
         {step === "challenge" && (
           <ul className="space-y-2" aria-label="Consignas">
-            {CHALLENGES_BY_POINTS.map((c) => (
+            {challenges?.map((c) => (
               <li key={c.id}>
                 <ChallengeOption
                   pick={c}

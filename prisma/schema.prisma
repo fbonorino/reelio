@@ -19,7 +19,7 @@ model Photo {
   type            MediaType
   /// Normalized Instagram handle (lowercase, no "@") of the uploader.
   instagram       String
-  /// Challenge id from src/lib/challenges.ts.
+  /// A Challenge id, or "libre" for a free photo (FREE_PHOTO in src/lib/challenges.ts).
   challengeId     String
   /// Points snapshot at upload time, so editing the list later doesn't rewrite history.
   challengePoints Int
@@ -36,6 +36,20 @@ model Photo {
   @@index([likeCount])
   @@index([createdAt])
   @@index([instagram])
+}
+
+/// The game's challenges, managed from /host.
+model Challenge {
+  id        String   @id @default(cuid())
+  label     String
+  points    Int
+  /// Order guests see them in, lowest first.
+  position  Int
+  /// Removed from the game: can't be picked any more, but kept so photos that used it still show its label.
+  retired   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([retired, position])
 }
 
 model Like {

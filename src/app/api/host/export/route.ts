@@ -3,6 +3,7 @@ import { downloadZip } from "client-zip";
 import { prisma } from "@/lib/prisma";
 import cloudinary, { parseCloudinaryUrl } from "@/lib/cloudinary";
 import { isHost } from "@/lib/host";
+import { challengeLabels } from "@/lib/challenges-db";
 import { EXPORT_PART_SIZE, exportFileName, slugify, type ExportKind } from "@/lib/export";
 
 // Streams originals straight from Cloudinary into the ZIP; big batches take a while.
@@ -15,10 +16,13 @@ type Entry = { name: string; url: string; resourceType: ExportKind; createdAt: D
  * per guest in upload order across photos and videos so names are stable between parts.
  */
 async function listEntries(): Promise<Entry[]> {
-  const photos = await prisma.photo.findMany({
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    select: { url: true, type: true, instagram: true, challengeId: true, createdAt: true },
-  });
+  const [photos, labels] = await Promise.all([
+    prisma.photo.findMany({
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { url: true, type: true, instagram: true, challengeId: true, createdAt: true },
+    }),
+    challengeLabels(),
+  ]);
 
   const counters = new Map<string, number>();
   return photos.map((photo) => {
@@ -26,7 +30,7 @@ async function listEntries(): Promise<Entry[]> {
     counters.set(photo.instagram, n);
     const format = parseCloudinaryUrl(photo.url)?.format ?? (photo.type === "VIDEO" ? "mp4" : "jpg");
     return {
-      name: exportFileName(photo.instagram, photo.challengeId, n, format),
+      name: exportFileName(photo.instagram, labels.get(photo.challengeId) ?? photo.challengeId, n, format),
       url: photo.url,
       resourceType: photo.type === "VIDEO" ? "video" : "image",
       createdAt: photo.createdAt,

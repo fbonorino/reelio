@@ -15,7 +15,7 @@ const STEPS = [
 /** A3 poster: QR, how to play, the top challenges and the rules. */
 export default async function PosterPage({ searchParams }: PageProps<"/print/afiche">) {
   const { theme, accent } = posterTheme(await searchParams);
-  const game = posterGame();
+  const game = await posterGame();
 
   return (
     <PosterSheet theme={theme} accent={accent} className="poster-main">

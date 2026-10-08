@@ -1,13 +1,17 @@
+"use client";
+
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FreeBadge, PointsBadge } from "@/components/photo-meta";
-import { CHALLENGES_BY_POINTS, FREE_PHOTO, MAX_FREE_PHOTOS_PER_USER } from "@/lib/challenges";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useChallenges } from "@/hooks/use-challenges";
+import { FREE_PHOTO, MAX_FREE_PHOTOS_PER_USER } from "@/lib/challenges";
 
 /** Which kinds of photo the guest still has room for. */
 export type Pickable = { challenges: boolean; free: boolean };
 
 /**
- * Every challenge, most points first, then "Foto libre". Pass `onPick` to show a "Subir esta"
+ * Every challenge, in the host's order, then "Foto libre". Pass `onPick` to show a "Subir esta"
  * button on each one the guest still has room for (`pickable`).
  */
 export function ChallengeList({
@@ -17,9 +21,16 @@ export function ChallengeList({
   onPick?: (challengeId: string) => void;
   pickable?: Pickable;
 }) {
+  const challenges = useChallenges();
   return (
     <ul className="space-y-2">
-      {CHALLENGES_BY_POINTS.map((c) => (
+      {!challenges &&
+        [0, 1, 2].map((i) => (
+          <li key={i}>
+            <Skeleton className="h-12 rounded-lg bg-zinc-800" />
+          </li>
+        ))}
+      {challenges?.map((c) => (
         <li key={c.id} className="rounded-lg bg-zinc-950 px-3 py-2.5 ring-1 ring-zinc-800">
           <div className="flex items-center gap-3">
             <PointsBadge points={c.points} className="w-11 shrink-0 text-center" />

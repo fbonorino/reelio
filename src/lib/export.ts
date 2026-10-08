@@ -1,5 +1,3 @@
-import { getChallengeLabel } from "@/lib/challenges";
-
 export type ExportKind = "image" | "video";
 
 /**
@@ -20,14 +18,13 @@ export function slugify(text: string) {
 }
 
 /** "Foto acostado en el piso del boliche" → "acostado-en-el-piso-del-boliche". */
-export function challengeSlug(challengeId: string) {
-  const label = getChallengeLabel(challengeId)?.replace(/^foto\s+/i, "");
-  return slugify(label ?? challengeId) || "consigna";
+export function challengeSlug(label: string) {
+  return slugify(label.replace(/^foto\s+/i, "")) || "consigna";
 }
 
 /** e.g. fran_bonorino_acostado-en-el-piso-del-boliche_01.jpg — `n` counts each guest's uploads in order. */
-export function exportFileName(instagram: string, challengeId: string, n: number, format: string) {
+export function exportFileName(instagram: string, challengeLabel: string, n: number, format: string) {
   const handle = instagram.replace(/[^a-z0-9._]/g, "") || "anonimo";
   const ext = format.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-  return `${handle}_${challengeSlug(challengeId)}_${String(n).padStart(2, "0")}.${ext}`;
+  return `${handle}_${challengeSlug(challengeLabel)}_${String(n).padStart(2, "0")}.${ext}`;
 }

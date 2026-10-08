@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import {
-  FREE_PHOTO,
-  getChallenge,
-  MAX_FREE_PHOTOS_PER_USER,
-  MAX_PHOTOS_PER_USER,
-} from "@/lib/challenges";
+import { FREE_PHOTO, MAX_FREE_PHOTOS_PER_USER, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
+import { challengeLabels, getActiveChallenge } from "@/lib/challenges-db";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
 import { isInvited, notInvitedResponse } from "@/lib/guests";
@@ -16,10 +12,13 @@ export async function GET(request: NextRequest) {
   // Whose likes to mark as `likedByMe`. Identity is the normalized handle, not the device.
   const viewer = normalizeInstagram(request.nextUrl.searchParams.get("instagram"));
 
-  const photos = await prisma.photo.findMany({
-    orderBy:
-      sort === "top" ? [{ likeCount: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
-  });
+  const [photos, labels] = await Promise.all([
+    prisma.photo.findMany({
+      orderBy:
+        sort === "top" ? [{ likeCount: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
+    }),
+    challengeLabels(),
+  ]);
 
   let likedPhotoIds = new Set<string>();
   if (viewer) {
@@ -33,6 +32,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     photos: photos.map((photo) => ({
       ...photo,
+      challengeLabel: labels.get(photo.challengeId) ?? photo.challengeId,
       likedByMe: likedPhotoIds.has(photo.id),
     })),
   });
@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
   const { url, thumbnailUrl, type, challengeId } = body;
   const instagram = normalizeInstagram(body.instagram);
   const free = challengeId === FREE_PHOTO.id;
-  const challenge = typeof challengeId === "string" ? getChallenge(challengeId) : undefined;
+  const challenge =
+    typeof challengeId === "string" && !free ? await getActiveChallenge(challengeId) : null;
 
   if (!url || !thumbnailUrl || !type) {
     return NextResponse.json({ error: "Faltan datos de la foto" }, { status: 400 });
@@ -63,7 +64,10 @@ export async function POST(request: NextRequest) {
     return notInvitedResponse();
   }
   if (!challenge && !free) {
-    return NextResponse.json({ error: "Elegí una consigna" }, { status: 400 });
+    return NextResponse.json(
+      { error: typeof challengeId === "string" ? "Esa consigna ya no está, elegí otra" : "Elegí una consigna" },
+      { status: 400 }
+    );
   }
   // Uploads stay open after the game closes, but those photos are keepsakes: no points, no ranking.
   const postDeadline = hasEventEnded();

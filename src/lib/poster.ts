@@ -1,4 +1,5 @@
-import { CHALLENGES_BY_POINTS, MAX_PHOTOS_PER_USER, POINTS_PER_LIKE } from "@/lib/challenges";
+import { MAX_PHOTOS_PER_USER, POINTS_PER_LIKE } from "@/lib/challenges";
+import { listChallenges } from "@/lib/challenges-db";
 import { getEventEnd } from "@/lib/event";
 import { PRIZE_LABEL } from "@/lib/prize";
 
@@ -30,12 +31,13 @@ function closingTime() {
 const POSTER_CHALLENGE_SLOTS = 9;
 
 /** Everything the posters say about the game, read from the same config the app enforces. */
-export function posterGame() {
+export async function posterGame() {
   const closes = closingTime();
+  // Most points first, whatever order the app shows them in: the posters rank them.
+  const challenges = (await listChallenges()).sort((a, b) => b.points - a.points);
   return {
     // All of them or none: a partial list would read as the whole game.
-    challenges:
-      CHALLENGES_BY_POINTS.length <= POSTER_CHALLENGE_SLOTS ? CHALLENGES_BY_POINTS : null,
+    challenges: challenges.length <= POSTER_CHALLENGE_SLOTS ? challenges : null,
     // The raw values, for layouts that print each one on its own.
     facts: { maxPhotos: MAX_PHOTOS_PER_USER, pointsPerLike: POINTS_PER_LIKE, closes },
     // Shown instead of the challenges when they don't fit.

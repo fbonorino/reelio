@@ -67,9 +67,7 @@ export function InfoRail({
               <SheetTitle className="font-display text-2xl uppercase tracking-wide text-zinc-50">
                 Consignas
               </SheetTitle>
-              <SheetDescription className="text-zinc-400">
-                Ordenadas de más a menos puntos.
-              </SheetDescription>
+              <SheetDescription className="sr-only">Las consignas del juego</SheetDescription>
             </SheetHeader>
           )}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))]">

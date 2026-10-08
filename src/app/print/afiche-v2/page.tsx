@@ -16,7 +16,7 @@ const FULL_BOARD_ROWS = 9;
  */
 export default async function PosterV2Page({ searchParams }: PageProps<"/print/afiche-v2">) {
   const { theme, accent } = posterTheme(await searchParams, "light");
-  const game = posterGame();
+  const game = await posterGame();
   const { maxPhotos, pointsPerLike, closes } = game.facts;
 
   const rows = game.challenges?.length ?? game.gameRules.length;

@@ -7,6 +7,8 @@ export type Photo = {
   type: MediaType;
   instagram: string;
   challengeId: string;
+  /** The challenge's current label ("Foto libre" for free photos). */
+  challengeLabel: string;
   challengePoints: number;
   invalidated: boolean;
   /** Uploaded after the game closed: a keepsake worth no points, left out of the ranking. */

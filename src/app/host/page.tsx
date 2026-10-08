@@ -8,6 +8,7 @@ import { Loader2, MinusCircle, Play, RotateCcw, ShieldAlert, Trash2 } from "luci
 import { Button } from "@/components/ui/button";
 import { HostExport } from "@/components/host-export";
 import { HostGuests } from "@/components/host-guests";
+import { HostChallenges } from "@/components/host-challenges";
 import { HostAccessRequests } from "@/components/host-access-requests";
 import {
   ChallengeLabel,
@@ -111,6 +112,7 @@ function HostView() {
           <div className="lg:col-span-2">
             <HostAccessRequests hostKey={key} />
           </div>
+          <HostChallenges hostKey={key} />
           <HostGuests hostKey={key} />
           <HostExport hostKey={key} />
         </div>

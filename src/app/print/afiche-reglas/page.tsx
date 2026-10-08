@@ -10,11 +10,11 @@ const STEP_ICONS = [ListChecks, Camera, Upload];
 
 /**
  * A3 poster with the rules only: no challenges or their points, which guests discover in the app.
- * Light by default. Every rule's wording comes from posterGame().posterRules.
+ * Light by default. Every rule's wording comes from (await posterGame()).posterRules.
  */
 export default async function RulesPosterPage({ searchParams }: PageProps<"/print/afiche-reglas">) {
   const { theme, accent } = posterTheme(await searchParams, "light");
-  const rules = posterGame().posterRules;
+  const rules = (await posterGame()).posterRules;
 
   return (
     <PosterSheet theme={theme} accent={accent} className="poster-v2 poster-reglas">

@@ -1,7 +1,7 @@
 # Reelio — Live Party Photo Sharing & Voting
 
 Guests scan a QR code, enter their Instagram handle once, and play a challenge game: each
-upload is tagged with a challenge (consigna) worth points (list in `src/lib/challenges.ts`),
+upload is tagged with a challenge (consigna) worth points (managed from `/host`),
 max 5 uploads per handle. Every like a photo receives is +1 for its uploader. A live
 "Ranking" tab shows the leaderboard, a countdown runs until `NEXT_PUBLIC_EVENT_END_TIME`
 (uploads/likes are blocked after it), and the host can invalidate a photo from `/host`
