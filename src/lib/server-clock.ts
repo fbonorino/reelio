@@ -21,6 +21,14 @@ export function syncServerClock() {
   return sync;
 }
 
+/**
+ * Updates the offset from any response stamped with the server's clock (e.g. /api/event-status),
+ * so it keeps up if the phone's clock jumps mid-party.
+ */
+export function noteServerTime(serverTime: number, sent: number, received: number) {
+  offset = serverTime - (sent + received) / 2;
+}
+
 /** Current time per the server's clock (the device's until synced). */
 export function serverNow() {
   return Date.now() + offset;

@@ -6,8 +6,16 @@ import { forgetIfNotInvited } from "@/lib/profile";
 
 type Count = { used: number; remaining: number; max: number };
 
-/** Top-level counts are challenge photos; `free` is "Foto libre", capped separately. */
-export type Quota = Count & { free: Count };
+/** Top-level counts are challenge photos; `free` is "Foto libre" and `bonus` the bonus track, each capped separately. */
+export type Quota = Count & {
+  free: Count;
+  bonus: Count & {
+    /** Bonus challenges already used: one photo each. */
+    challengeIds: string[];
+    /** While the window is open: send it with a bonus upload, for the grace period after the close. */
+    ticket: string | null;
+  };
+};
 
 async function fetchQuota(url: string): Promise<Quota> {
   const res = await fetch(url);

@@ -13,6 +13,8 @@ export type Photo = {
   invalidated: boolean;
   /** Uploaded after the game closed: a keepsake worth no points, left out of the ranking. */
   postDeadline: boolean;
+  /** Bonus track photo: `challengePoints` already has the multiplier applied. */
+  isBonus: boolean;
   likeCount: number;
   createdAt: string;
   likedByMe: boolean;

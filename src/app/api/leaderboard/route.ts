@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { FREE_PHOTO, POINTS_PER_LIKE } from "@/lib/challenges";
-import { rankEntries } from "@/lib/ranking";
+import { FREE_PHOTO } from "@/lib/challenges";
+import { photoScore, rankEntries } from "@/lib/ranking";
 import type { LeaderboardEntry, TopPhoto } from "@/lib/types";
 
 type Totals = Omit<LeaderboardEntry, "rank" | "instagram" | "lastScoredAt"> & {
@@ -43,8 +43,7 @@ export async function GET() {
       lastScoredAt: null,
     };
     // Invalidated photos lose their challenge points but keep the likes they earned.
-    const points =
-      (photo.invalidated ? 0 : photo.challengePoints) + photo.likeCount * POINTS_PER_LIKE;
+    const points = photoScore(photo);
     entry.score += points;
     entry.photoCount += 1;
     entry.likes += photo.likeCount;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useSWRConfig } from "swr";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Feed } from "@/components/feed";
@@ -9,6 +9,14 @@ import { Leaderboard } from "@/components/leaderboard";
 import { Countdown } from "@/components/countdown";
 import { Onboarding } from "@/components/onboarding";
 import { InfoRail } from "@/components/info-rail";
+import {
+  BonusBanner,
+  BonusTakeover,
+  hasSeenBonusTakeover,
+  markBonusTakeoverSeen,
+} from "@/components/bonus-track";
+import { useEventStatus } from "@/hooks/use-event-status";
+import { useBonusChallenges } from "@/hooks/use-challenges";
 import { MAX_FREE_PHOTOS_PER_USER, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
 import { GameOver } from "@/components/winner-announcement";
 import { useEventEnded } from "@/hooks/use-event-ended";
@@ -31,12 +39,29 @@ export default function Home() {
   const photosUsed = quota?.used ?? 0;
   const freeUsed = quota?.free?.used ?? 0;
   // Uploads stay open after the game closes; those photos just don't score.
-  // Challenge photos and "Foto libre" are capped separately.
+  // Challenge photos, "Foto libre" and the bonus track are capped separately.
   const pickable = {
     challenges: photosUsed < MAX_PHOTOS_PER_USER,
     free: freeUsed < MAX_FREE_PHOTOS_PER_USER,
+    bonus: quota ? quota.bonus.remaining > 0 : true,
+    bonusUsed: quota?.bonus.challengeIds,
   };
   const uploadRef = useRef<UploadFlowHandle>(null);
+
+  const status = useEventStatus();
+  const bonusChallenges = useBonusChallenges();
+  // null: follow the "once per guest" rule; true/false: the guest opened or closed it themselves.
+  const [takeover, setTakeover] = useState<boolean | null>(null);
+  const takeoverOpen =
+    status?.phase === "open" &&
+    !ended &&
+    !!instagram &&
+    !!bonusChallenges?.length &&
+    (takeover ?? !hasSeenBonusTakeover(instagram));
+  const closeTakeover = useCallback(() => {
+    if (instagram) markBonusTakeoverSeen(instagram);
+    setTakeover(false);
+  }, [instagram]);
 
   function refreshFeeds() {
     mutate(
@@ -55,6 +80,7 @@ export default function Home() {
           {eventName}
         </h1>
         <Countdown />
+        {!ended && <BonusBanner status={status} onOpen={() => setTakeover(true)} />}
         <GameOver ended={ended} instagram={instagram} preview={preview} />
       </header>
       {/* Only the tabs stick: with the winner banner, the whole header would cover a third of a small phone.
@@ -78,6 +104,7 @@ export default function Home() {
         instagram={instagram}
         photosUsed={photosUsed}
         freeUsed={freeUsed}
+        bonusQuota={quota?.bonus}
         ended={ended}
         onUploaded={refreshFeeds}
       />
@@ -86,6 +113,20 @@ export default function Home() {
         onPickChallenge={instagram ? (id) => uploadRef.current?.start(id) : undefined}
         pickable={pickable}
       />
+      {status && bonusChallenges && (
+        <BonusTakeover
+          open={takeoverOpen}
+          status={status}
+          challenges={bonusChallenges}
+          onClose={closeTakeover}
+          onPick={(id) => {
+            closeTakeover();
+            // Already done or out of bonus photos: open on the list, which says why it's disabled.
+            const canPick = pickable.bonus && !pickable.bonusUsed?.includes(id);
+            uploadRef.current?.start(canPick ? id : undefined);
+          }}
+        />
+      )}
       {/* Remount when it reopens (handle removed from the guest list) so it starts from a clean search.
           Held back during a winner preview, which may run on a device that never onboarded. */}
       <Onboarding key={instagram === null ? "open" : "closed"} open={instagram === null && !preview} />

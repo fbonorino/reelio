@@ -21,16 +21,20 @@ export function InstagramLink({ handle, className }: { handle: string; className
 export function PointsBadge({
   points,
   struck,
+  bonus,
   className,
 }: {
   points: number;
   struck?: boolean;
+  /** Bonus track points (already multiplied): the bonus accent instead of amber. */
+  bonus?: boolean;
   className?: string;
 }) {
   return (
     <span
       className={cn(
         "rounded-full bg-amber-400 px-2 py-0.5 font-display text-sm tracking-wide text-zinc-950",
+        bonus && "bg-bonus text-white",
         struck && "bg-zinc-700 text-zinc-400 line-through",
         className
       )}
@@ -45,7 +49,12 @@ export function PointsChip({ photo, className }: { photo: Photo; className?: str
   if (isFreePhoto(photo.challengeId)) return <FreeBadge className={className} />;
   if (photo.postDeadline) return <KeepsakeBadge className={className} />;
   return (
-    <PointsBadge points={photo.challengePoints} struck={photo.invalidated} className={className} />
+    <PointsBadge
+      points={photo.challengePoints}
+      struck={photo.invalidated}
+      bonus={photo.isBonus}
+      className={className}
+    />
   );
 }
 
@@ -96,6 +105,20 @@ export function KeepsakeBadge({ label = "Recuerdo", className }: { label?: strin
     >
       <Camera className="size-3.5" />
       {label}
+    </span>
+  );
+}
+
+/** "BONUS x2": marks a bonus track challenge, in the posters' mono type. */
+export function BonusTag({ multiplier = 2, className }: { multiplier?: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm bg-bonus px-1.5 py-0.5 font-bonus-mono text-[0.65rem] font-bold uppercase leading-none tracking-wider text-white",
+        className
+      )}
+    >
+      Bonus x{multiplier}
     </span>
   );
 }

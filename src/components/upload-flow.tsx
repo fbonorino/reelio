@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { FreeBadge, KeepsakeBadge, PointsBadge } from "@/components/photo-meta";
+import { BonusTag, FreeBadge, KeepsakeBadge, PointsBadge } from "@/components/photo-meta";
+import { BonusConsent } from "@/components/bonus-track";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useBackToClose } from "@/hooks/use-back-to-close";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -25,15 +26,17 @@ import {
   isFreePhoto,
   MAX_FREE_PHOTOS_PER_USER,
   MAX_PHOTOS_PER_USER,
-  type Challenge,
 } from "@/lib/challenges";
-import { useChallenges } from "@/hooks/use-challenges";
+import { BONUS_EXTRA_PHOTOS, formatBonusTime, type GuestChallenge } from "@/lib/bonus";
+import { useBonusChallenges, useChallenges } from "@/hooks/use-challenges";
+import { useEventStatus } from "@/hooks/use-event-status";
+import type { Quota } from "@/hooks/use-quota";
 import { forgetIfNotInvited } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 export type UploadFlowHandle = {
-  /** Opens the flow with `challengeId` already picked, skipping straight to choosing the photo. */
-  start: (challengeId: string) => void;
+  /** Opens the flow, with `challengeId` already picked if given (skipping straight to choosing the photo). */
+  start: (challengeId?: string) => void;
 };
 
 type Step = "challenge" | "media" | "review";
@@ -46,21 +49,26 @@ const STEPS: Record<Step, { number: number; title: string }> = {
 
 type UploadError = { message: string; retryable: boolean };
 
-/** What the photo is for: a challenge, or "Foto libre" (`points: null`). */
-type Pick = { id: string; label: string; points: number | null };
+/** What the photo is for: a challenge (maybe a bonus one), or "Foto libre" (`points: null`). */
+type Pick = { id: string; label: string; points: number | null; bonus?: boolean };
 
 const FREE_PICK: Pick = { id: FREE_PHOTO.id, label: FREE_PHOTO.label, points: null };
 
-function getPick(id: string | null, challenges: Challenge[] | undefined): Pick | undefined {
+function getPick(
+  id: string | null,
+  challenges: GuestChallenge[] | undefined,
+  bonus: GuestChallenge[] | undefined
+): Pick | undefined {
   if (!id) return undefined;
   if (isFreePhoto(id)) return FREE_PICK;
-  return challenges?.find((c) => c.id === id);
+  return challenges?.find((c) => c.id === id) ?? bonus?.find((c) => c.id === id);
 }
 
 export function UploadFlow({
   instagram,
   photosUsed,
   freeUsed,
+  bonusQuota,
   ended,
   onUploaded,
   ref,
@@ -70,6 +78,8 @@ export function UploadFlow({
   photosUsed: number;
   /** "Foto libre" uploads so far; capped separately. */
   freeUsed: number;
+  /** Bonus track quota (separate too) and which bonus challenges were already used. */
+  bonusQuota: Quota["bonus"] | undefined;
   /** The game has closed: uploads still work, but they're keepsakes worth no points. */
   ended: boolean;
   onUploaded: () => void;
@@ -98,12 +108,26 @@ export function UploadFlow({
 
   const remaining = Math.max(0, MAX_PHOTOS_PER_USER - photosUsed);
   const freeRemaining = Math.max(0, MAX_FREE_PHOTOS_PER_USER - freeUsed);
-  const limitReached = remaining === 0 && freeRemaining === 0;
+  const status = useEventStatus();
+  const bonusOpen = status?.phase === "open";
+  const bonusRemaining = bonusQuota?.remaining ?? BONUS_EXTRA_PHOTOS;
+  const limitReached = remaining === 0 && freeRemaining === 0 && !(bonusOpen && bonusRemaining > 0);
   const challenges = useChallenges();
-  const pick = getPick(challengeId, challenges);
+  // Empty until the window opens: the server doesn't send them before.
+  const bonusChallenges = useBonusChallenges();
+  const pick = getPick(challengeId, challenges, bonusChallenges);
   // The host took the picked challenge out of the game meanwhile: back to choosing one.
   const step: Step = currentStep !== "challenge" && challenges && !pick ? "challenge" : currentStep;
   const pickIsFree = pick?.points === null;
+  const pickIsBonus = pick?.bonus === true;
+
+  /** Why a bonus challenge can't be picked right now, if it can't. */
+  function bonusDisabledReason(id: string) {
+    if (!bonusOpen) return "El bonus track cerró";
+    if (bonusQuota?.challengeIds.includes(id)) return "Ya subiste una foto para esta";
+    if (bonusRemaining === 0) return `Ya usaste tus ${BONUS_EXTRA_PHOTOS} fotos bonus`;
+    return undefined;
+  }
 
   // Android's Back closes the flow instead of leaving the app; mid-upload it does nothing.
   useBackToClose(open, () => setOpen(false), { dismissible: !uploading });
@@ -172,16 +196,21 @@ export function UploadFlow({
         }
         throw new Error(quota?.error ?? "No se pudo verificar tu cupo");
       }
-      const left = pickIsFree ? quota.free?.remaining : quota.remaining;
+      const left = pickIsFree ? quota.free?.remaining : pickIsBonus ? quota.bonus?.remaining : quota.remaining;
       if (left <= 0) {
         setError({
           message: pickIsFree
             ? `Ya subiste tus ${MAX_FREE_PHOTOS_PER_USER} fotos libres`
-            : `Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos de consignas`,
+            : pickIsBonus
+              ? `Ya usaste tus ${BONUS_EXTRA_PHOTOS} fotos bonus`
+              : `Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos de consignas`,
           retryable: false,
         });
         return;
       }
+      // Stamped by the server now, before the upload: if the bonus closes while the photo is on its
+      // way, the server still takes it for a minute. Null when the window isn't open.
+      const bonusTicket: string | null = pickIsBonus ? (quota.bonus?.ticket ?? null) : null;
 
       let uploaded = uploadedRef.current?.file === file ? uploadedRef.current.result : null;
       if (uploaded) {
@@ -194,7 +223,7 @@ export function UploadFlow({
       const res = await fetch("/api/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...uploaded, instagram, challengeId }),
+        body: JSON.stringify({ ...uploaded, instagram, challengeId, bonusTicket }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -203,7 +232,8 @@ export function UploadFlow({
           toast.error(data.error);
           return;
         }
-        if (data?.remaining === 0) {
+        // Out of room, bonus window closed, or that bonus challenge already used: retrying won't help.
+        if (data?.remaining === 0 || data?.code === "BONUS_CLOSED" || data?.code === "BONUS_REPEAT") {
           setError({ message: data.error, retryable: false });
           return;
         }
@@ -211,7 +241,14 @@ export function UploadFlow({
       }
 
       const leftAfter: number = data.remaining;
-      if (pickIsFree) {
+      if (pickIsBonus) {
+        toast.success(
+          `¡Foto bonus subida! +${data.photo?.challengePoints ?? pick?.points} pts. ` +
+            (leftAfter > 0
+              ? `Te quedan ${leftAfter} de ${BONUS_EXTRA_PHOTOS} bonus.`
+              : `Ya usaste tus ${BONUS_EXTRA_PHOTOS} bonus.`)
+        );
+      } else if (pickIsFree) {
         toast.success(
           leftAfter > 0
             ? `¡Foto libre subida! Te quedan ${leftAfter} de ${MAX_FREE_PHOTOS_PER_USER} libres.`
@@ -288,6 +325,7 @@ export function UploadFlow({
                 ? `Usaste tus ${MAX_PHOTOS_PER_USER} fotos de consignas · te quedan ${freeRemaining} libres`
                 : `Te quedan ${remaining} de ${MAX_PHOTOS_PER_USER} fotos`}
             {ended && !limitReached && " · no suman puntos"}
+            {bonusOpen && bonusRemaining > 0 && ` · +${bonusRemaining} bonus`}
           </span>
         )}
       </div>
@@ -341,6 +379,40 @@ export function UploadFlow({
           </div>
         )}
 
+        {step === "challenge" && status?.phase === "before" && (
+          <p className="mb-3 flex items-center gap-2 rounded-lg bg-bonus/10 px-3 py-2 text-sm text-zinc-200 ring-1 ring-bonus/40">
+            <BonusTag />
+            Bonus track a las {formatBonusTime(new Date(status.startsAt))}: nuevas consignas
+          </p>
+        )}
+
+        {step === "challenge" && !!bonusChallenges?.length && (
+          <section aria-label="Consignas bonus" className="mb-4">
+            <h3 className="mb-2 flex items-center gap-2 font-bonus text-sm font-extrabold uppercase tracking-wide text-zinc-50">
+              Bonus track
+              <BonusTag multiplier={status?.multiplier} />
+              {bonusOpen && (
+                <span className="ml-auto font-bonus-mono text-xs font-medium normal-case tracking-normal text-zinc-400">
+                  {bonusRemaining} de {BONUS_EXTRA_PHOTOS} extra
+                </span>
+              )}
+            </h3>
+            <ul className="space-y-2">
+              {bonusChallenges.map((c) => (
+                <li key={c.id}>
+                  <ChallengeOption
+                    pick={c}
+                    showPoints
+                    selected={c.id === challengeId}
+                    disabledReason={bonusDisabledReason(c.id)}
+                    onSelect={() => pickChallenge(c.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {step === "challenge" && (
           <ul className="space-y-2" aria-label="Consignas">
             {challenges?.map((c) => (
@@ -382,6 +454,7 @@ export function UploadFlow({
               ended={ended}
               onChange={() => setStep("challenge")}
             />
+            {pick.bonus && <BonusConsent />}
             <div className="grid gap-3">
               {hasCamera && (
                 <MediaSourceButton
@@ -415,6 +488,7 @@ export function UploadFlow({
         {step === "review" && pick && previewUrl && (
           <div className="space-y-3">
             <SelectedChallenge pick={pick} ended={ended} />
+            {pick.bonus && <BonusConsent />}
 
             <div className="overflow-hidden rounded-xl bg-zinc-950 ring-1 ring-zinc-800">
               {isVideo ? (
@@ -528,6 +602,7 @@ function ChallengeOption({
   onSelect: () => void;
 }) {
   const free = pick.points === null;
+  const bonus = pick.bonus === true;
   const disabled = disabledReason !== undefined;
   return (
     <button
@@ -538,6 +613,7 @@ function ChallengeOption({
       aria-label={[
         pick.label,
         free ? "foto libre, no suma puntos" : showPoints && `${pick.points} puntos`,
+        bonus && "bonus por 2",
         disabledReason,
       ]
         .filter(Boolean)
@@ -546,8 +622,11 @@ function ChallengeOption({
         "flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-[box-shadow,background-color] outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 enabled:active:scale-[0.99]",
         free
           ? "border border-dashed border-zinc-700 bg-zinc-950/40 enabled:hover:border-zinc-500"
-          : "bg-zinc-950 ring-1 ring-zinc-800 enabled:hover:bg-zinc-900 enabled:hover:ring-zinc-600",
+          : bonus
+            ? "bg-zinc-950 ring-1 ring-bonus/50 enabled:hover:bg-zinc-900 enabled:hover:ring-bonus"
+            : "bg-zinc-950 ring-1 ring-zinc-800 enabled:hover:bg-zinc-900 enabled:hover:ring-zinc-600",
         selected && "border-solid bg-indigo-500/10 ring-2 ring-indigo-500 enabled:hover:ring-indigo-500",
+        selected && bonus && "bg-bonus/10 ring-bonus enabled:hover:ring-bonus",
         disabled && "cursor-not-allowed opacity-50"
       )}
     >
@@ -555,12 +634,15 @@ function ChallengeOption({
         <FreeBadge className="w-11 shrink-0 text-center" />
       ) : (
         showPoints &&
-        pick.points !== null && <PointsBadge points={pick.points} className="w-11 shrink-0 text-center" />
+        pick.points !== null && (
+          <PointsBadge points={pick.points} bonus={bonus} className="w-11 shrink-0 text-center" />
+        )
       )}
       <span className="min-w-0 flex-1">
         <span className={cn("block text-sm leading-snug", free ? "text-zinc-300" : "text-zinc-200")}>
           {pick.label}
         </span>
+        {bonus && !disabled && <BonusTag className="mt-1" />}
         {(disabledReason ?? hint) && (
           <span className="flex items-center gap-1 text-xs leading-snug text-zinc-400">
             {disabled && <Ban className="size-3 shrink-0" aria-hidden />}
@@ -568,7 +650,7 @@ function ChallengeOption({
           </span>
         )}
       </span>
-      {selected && <Check className="size-5 shrink-0 text-indigo-400" aria-hidden />}
+      {selected && <Check className={cn("size-5 shrink-0", bonus ? "text-bonus" : "text-indigo-400")} aria-hidden />}
     </button>
   );
 }
@@ -583,16 +665,28 @@ function SelectedChallenge({
   onChange?: () => void;
 }) {
   const free = pick.points === null;
+  const bonus = pick.bonus === true;
   return (
-    <div className="flex min-h-14 items-center gap-3 rounded-lg bg-zinc-950 px-3 py-2.5 ring-1 ring-indigo-500/60">
+    <div
+      className={cn(
+        "flex min-h-14 items-center gap-3 rounded-lg bg-zinc-950 px-3 py-2.5 ring-1",
+        bonus ? "ring-bonus/70" : "ring-indigo-500/60"
+      )}
+    >
       {free ? (
         <FreeBadge className="w-11 shrink-0 text-center" />
       ) : (
-        !ended &&
-        pick.points !== null && <PointsBadge points={pick.points} className="w-11 shrink-0 text-center" />
+        // A bonus photo still scores after the close when the grace period lets it in, so keep its points.
+        (!ended || bonus) &&
+        pick.points !== null && (
+          <PointsBadge points={pick.points} bonus={bonus} className="w-11 shrink-0 text-center" />
+        )
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[0.7rem] font-medium uppercase tracking-wider text-zinc-400">Consigna</p>
+        <p className="flex items-center gap-2 text-[0.7rem] font-medium uppercase tracking-wider text-zinc-400">
+          Consigna
+          {bonus && <BonusTag />}
+        </p>
         <p className="text-sm leading-snug text-zinc-100">{pick.label}</p>
         {/* After the close the keepsake banner already says so. */}
         {free && !ended && <p className="text-xs text-zinc-400">No suma puntos</p>}

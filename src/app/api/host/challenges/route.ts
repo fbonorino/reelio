@@ -7,12 +7,20 @@ function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-/** Host-only: the challenges guests can pick, in order, with how many photos each one has. */
+/** `?bonus=1` works on the bonus track list instead: same editor, separate list and order. */
+function isBonusList(request: NextRequest) {
+  return request.nextUrl.searchParams.get("bonus") === "1";
+}
+
+/**
+ * Host-only: the challenges guests can pick, in order, with how many photos each one has.
+ * Bonus ones (`?bonus=1`) come with their base points, as the host typed them.
+ */
 export async function GET(request: NextRequest) {
   if (!isHost(request)) return unauthorized();
 
   const [challenges, counts] = await Promise.all([
-    listChallenges(),
+    listChallenges({ bonus: isBonusList(request) }),
     prisma.photo.groupBy({ by: ["challengeId"], _count: { _all: true } }),
   ]);
   const photos = new Map(counts.map((c) => [c.challengeId, c._count._all]));
@@ -22,22 +30,23 @@ export async function GET(request: NextRequest) {
   );
 }
 
-/** Host-only: `{ label, points }` adds a challenge at the end of the list. */
+/** Host-only: `{ label, points }` adds a challenge at the end of the list (base points, for a bonus one). */
 export async function POST(request: NextRequest) {
   if (!isHost(request)) return unauthorized();
 
   const data = parseChallengeInput(await request.json().catch(() => null), { partial: false });
   if (typeof data === "string") return NextResponse.json({ error: data }, { status: 400 });
 
-  const last = await prisma.challenge.aggregate({ _max: { position: true } });
+  const isBonus = isBonusList(request);
+  const last = await prisma.challenge.aggregate({ where: { isBonus }, _max: { position: true } });
   const challenge = await prisma.challenge.create({
-    data: { label: data.label!, points: data.points!, position: (last._max.position ?? -1) + 1 },
+    data: { label: data.label!, points: data.points!, isBonus, position: (last._max.position ?? -1) + 1 },
     select: { id: true, label: true, points: true },
   });
   return NextResponse.json({ challenge }, { status: 201 });
 }
 
-/** Host-only: `{ order: id[] }` — every active challenge's id, in the new order. */
+/** Host-only: `{ order: id[] }` — every active challenge's id (of that list), in the new order. */
 export async function PUT(request: NextRequest) {
   if (!isHost(request)) return unauthorized();
 
@@ -47,7 +56,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Falta el orden" }, { status: 400 });
   }
 
-  const active = await listChallenges();
+  const active = await listChallenges({ bonus: isBonusList(request) });
   const ids = new Set(active.map((c) => c.id));
   // Exactly the current list, so a stale tab can't drop or duplicate one someone else just added.
   if (order.length !== ids.size || new Set(order).size !== ids.size || !order.every((id) => ids.has(id))) {

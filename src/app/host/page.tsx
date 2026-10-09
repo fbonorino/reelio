@@ -10,7 +10,10 @@ import { HostExport } from "@/components/host-export";
 import { HostGuests } from "@/components/host-guests";
 import { HostChallenges } from "@/components/host-challenges";
 import { HostAccessRequests } from "@/components/host-access-requests";
+import { HostBonus } from "@/components/host-bonus";
+import { HostWhatsApp, HostWhatsAppReminder } from "@/components/host-whatsapp";
 import {
+  BonusTag,
   ChallengeLabel,
   InstagramLink,
   InvalidatedBadge,
@@ -109,9 +112,15 @@ function HostView() {
       <main>
         <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-2 lg:items-start">
           {/* First, so on a phone it's what's on screen when the panel opens. */}
+          <div className="empty:hidden lg:col-span-2">
+            <HostWhatsAppReminder hostKey={key} />
+          </div>
           <div className="lg:col-span-2">
             <HostAccessRequests hostKey={key} />
           </div>
+          <HostBonus hostKey={key} />
+          <HostChallenges hostKey={key} bonus />
+          <HostWhatsApp hostKey={key} />
           <HostChallenges hostKey={key} />
           <HostGuests hostKey={key} />
           <HostExport hostKey={key} />
@@ -155,6 +164,7 @@ function HostView() {
                     </span>
                   )}
                   <PointsChip photo={photo} className="absolute right-2 top-2" />
+                  {photo.isBonus && <BonusTag className="absolute left-2 top-2" />}
                 </a>
                 <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 text-sm text-zinc-400 sm:p-2 sm:text-xs">
                   <InstagramLink

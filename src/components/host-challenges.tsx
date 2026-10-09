@@ -3,10 +3,11 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Check, ListChecks, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ListChecks, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_CHALLENGE_LABEL, MAX_CHALLENGE_POINTS, type Challenge } from "@/lib/challenges";
+import { BONUS_MULTIPLIER, effectivePoints } from "@/lib/bonus";
 import { cn } from "@/lib/utils";
 
 type HostChallenge = Challenge & { photoCount: number };
@@ -37,10 +38,13 @@ function parsePoints(text: string) {
 const INPUT = "h-11 border-zinc-700 bg-zinc-950 text-base sm:pointer-fine:h-8 sm:text-sm";
 const ICON_BUTTON = "size-11 shrink-0 sm:pointer-fine:size-8";
 
-/** Host-only: the challenges guests pick from. Edit the text and points, reorder, add, remove. */
-export function HostChallenges({ hostKey }: { hostKey: string }) {
+/**
+ * Host-only: the challenges guests pick from. Edit the text and points, reorder, add, remove.
+ * `bonus` edits the bonus track list instead: the host types base points, guests see them multiplied.
+ */
+export function HostChallenges({ hostKey, bonus = false }: { hostKey: string; bonus?: boolean }) {
   const keyParam = `key=${encodeURIComponent(hostKey)}`;
-  const listUrl = `/api/host/challenges?${keyParam}`;
+  const listUrl = `/api/host/challenges?${keyParam}${bonus ? "&bonus=1" : ""}`;
   const { data, mutate, isLoading } = useSWR<{ challenges: HostChallenge[] }>(listUrl, fetcher);
   const challenges = data?.challenges ?? [];
   const [moving, setMoving] = useState(false);
@@ -83,17 +87,24 @@ export function HostChallenges({ hostKey }: { hostKey: string }) {
   }
 
   return (
-    <section className="grid min-w-0 gap-3 rounded-lg bg-zinc-900 p-4 ring-1 ring-zinc-800">
+    <section
+      className={cn(
+        "grid min-w-0 gap-3 rounded-lg bg-zinc-900 p-4 ring-1",
+        bonus ? "ring-bonus/40" : "ring-zinc-800"
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-semibold text-zinc-50">
-          <ListChecks className="size-4" />
-          Consignas
+          {bonus ? <Sparkles className="size-4 text-bonus" /> : <ListChecks className="size-4" />}
+          {bonus ? "Consignas bonus" : "Consignas"}
         </h2>
         <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
           {isLoading ? "…" : challenges.length}
         </span>
       </div>
       <p className="text-sm text-zinc-400">
+        {bonus &&
+          `Secretas hasta que abre el bonus track. Cargá los puntos base: los invitados ven y suman x${BONUS_MULTIPLIER}. Una foto por consigna por invitado. `}
         Los invitados las ven en este orden. Un cambio de puntos vale para las fotos que se suban
         de ahora en más: las que ya están conservan los puntos con los que se subieron.
       </p>
@@ -111,6 +122,7 @@ export function HostChallenges({ hostKey }: { hostKey: string }) {
               challenge={c}
               position={i + 1}
               url={`/api/host/challenges/${c.id}?${keyParam}`}
+              bonus={bonus}
               canMoveUp={i > 0 && !moving}
               canMoveDown={i < challenges.length - 1 && !moving}
               onMove={(delta) => move(i, delta)}
@@ -121,7 +133,7 @@ export function HostChallenges({ hostKey }: { hostKey: string }) {
         </ol>
       )}
 
-      <NewChallenge url={listUrl} onAdded={() => mutate()} />
+      <NewChallenge url={listUrl} bonus={bonus} onAdded={() => mutate()} />
     </section>
   );
 }
@@ -130,6 +142,7 @@ function ChallengeRow({
   challenge,
   position,
   url,
+  bonus,
   canMoveUp,
   canMoveDown,
   onMove,
@@ -139,6 +152,7 @@ function ChallengeRow({
   challenge: HostChallenge;
   position: number;
   url: string;
+  bonus: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMove: (delta: -1 | 1) => void;
@@ -186,7 +200,8 @@ function ChallengeRow({
             className={INPUT}
           />
         </div>
-        <div className="flex items-center gap-2 pl-7">
+        {/* The bonus row also shows the effective points: on a phone the buttons wrap below. */}
+        <div className={cn("flex items-center gap-2 pl-7", bonus && "flex-wrap")}>
           <Input
             value={pointsText}
             onChange={(e) => setPointsText(e.target.value)}
@@ -195,7 +210,8 @@ function ChallengeRow({
             aria-invalid={points === null}
             className={cn(INPUT, "w-20 text-center tabular-nums")}
           />
-          <span className="text-sm text-zinc-400">pts</span>
+          <span className="text-sm text-zinc-400">{bonus ? "base" : "pts"}</span>
+          {bonus && points !== null && <EffectivePoints points={points} />}
           {challenge.photoCount > 0 && (
             <span className="truncate text-xs text-zinc-500">
               · {challenge.photoCount} foto{challenge.photoCount === 1 ? "" : "s"}
@@ -254,7 +270,16 @@ function ChallengeRow({
   );
 }
 
-function NewChallenge({ url, onAdded }: { url: string; onAdded: () => void }) {
+/** "= 30 pts": what guests see and score for a bonus challenge with these base points. */
+function EffectivePoints({ points }: { points: number }) {
+  return (
+    <span className="shrink-0 font-bonus-mono text-xs font-bold tabular-nums text-bonus">
+      = {effectivePoints({ points, isBonus: true })} pts
+    </span>
+  );
+}
+
+function NewChallenge({ url, bonus, onAdded }: { url: string; bonus: boolean; onAdded: () => void }) {
   const [label, setLabel] = useState("");
   const [pointsText, setPointsText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -283,22 +308,26 @@ function NewChallenge({ url, onAdded }: { url: string; onAdded: () => void }) {
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         maxLength={MAX_CHALLENGE_LABEL}
-        placeholder="Nueva consigna, ej: Foto con alguien disfrazado"
+        placeholder={bonus ? "Nueva consigna bonus" : "Nueva consigna, ej: Foto con alguien disfrazado"}
         className={INPUT}
       />
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Input
           value={pointsText}
           onChange={(e) => setPointsText(e.target.value)}
           inputMode="numeric"
-          placeholder="Pts"
-          aria-label="Puntos de la nueva consigna"
+          placeholder={bonus ? "Base" : "Pts"}
+          aria-label={bonus ? "Puntos base de la nueva consigna bonus" : "Puntos de la nueva consigna"}
           className={cn(INPUT, "w-20 text-center tabular-nums")}
         />
+        {bonus && points !== null && <EffectivePoints points={points} />}
         <Button
           type="submit"
           disabled={adding || !label.trim() || points === null}
-          className="h-11 flex-1 bg-indigo-600 text-white hover:bg-indigo-500 sm:pointer-fine:h-8"
+          className={cn(
+            "h-11 flex-1 text-white sm:pointer-fine:h-8",
+            bonus ? "bg-bonus hover:bg-bonus/90" : "bg-indigo-600 hover:bg-indigo-500"
+          )}
         >
           {adding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
           Agregar consigna

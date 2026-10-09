@@ -29,6 +29,9 @@ model Photo {
   adjustedAt      DateTime?
   /// Uploaded after NEXT_PUBLIC_EVENT_END_TIME: a keepsake only. challengePoints is 0 and it's left out of the ranking.
   postDeadline    Boolean   @default(false)
+  /// Uploaded for a bonus track challenge: challengePoints already has the multiplier applied, and it
+  /// counts against the bonus quota (BONUS_EXTRA_PHOTOS) instead of MAX_PHOTOS_PER_USER.
+  isBonus         Boolean   @default(false)
   likeCount       Int       @default(0)
   createdAt       DateTime  @default(now())
   likes           Like[]
@@ -47,9 +50,34 @@ model Challenge {
   position  Int
   /// Removed from the game: can't be picked any more, but kept so photos that used it still show its label.
   retired   Boolean  @default(false)
+  /// Bonus track challenge: secret until the bonus window opens, only pickable while it's open, and
+  /// worth `points` (the base the host typed) times BONUS_MULTIPLIER. Ordered separately from the rest.
+  isBonus   Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  @@index([retired, position])
+  @@index([isBonus, retired, position])
+}
+
+enum BonusOverride {
+  /// The window opens and closes on its own at bonusStartsAt / bonusEndsAt.
+  AUTO
+  OPEN
+  CLOSED
+}
+
+/// Event-wide settings changed from /host. A single row (id 1); until it exists, the defaults in src/lib/bonus.ts apply.
+model EventSettings {
+  id              Int           @id @default(1)
+  /// Bonus track window, in UTC. The end is capped at NEXT_PUBLIC_EVENT_END_TIME when it's read.
+  bonusStartsAt   DateTime
+  bonusEndsAt     DateTime
+  bonusOverride   BonusOverride @default(AUTO)
+  /// When bonusOverride last changed: a forced close starts the upload grace period from here.
+  bonusOverrideAt DateTime?
+  /// First time the host forced the window open. From then on the bonus challenges stay public, even
+  /// if it's forced closed again before bonusStartsAt.
+  bonusRevealedAt DateTime?
+  updatedAt       DateTime      @updatedAt
 }
 
 model Like {

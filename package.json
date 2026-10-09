@@ -10,7 +10,8 @@
     "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON 'src/**/*.test.ts'",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed-bonus": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-bonus.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

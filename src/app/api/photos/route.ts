@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { FREE_PHOTO, MAX_FREE_PHOTOS_PER_USER, MAX_PHOTOS_PER_USER } from "@/lib/challenges";
+import { FREE_PHOTO } from "@/lib/challenges";
 import { challengeLabels, getActiveChallenge } from "@/lib/challenges-db";
 import { normalizeInstagram } from "@/lib/instagram";
 import { hasEventEnded } from "@/lib/event";
 import { isInvited, notInvitedResponse } from "@/lib/guests";
+import { checkBonusWindow, effectivePoints } from "@/lib/bonus";
+import { getBonusState } from "@/lib/bonus-db";
+import { readBonusTicket } from "@/lib/bonus-ticket";
+import { PHOTO_LIMITS, quotaError, tallyPhotos, type PhotoKind } from "@/lib/quota";
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort");
@@ -38,9 +42,15 @@ export async function GET(request: NextRequest) {
   });
 }
 
-class LimitReachedError extends Error {}
+class QuotaError extends Error {
+  constructor(message: string, readonly limit: boolean) {
+    super(message);
+  }
+}
 
 export async function POST(request: NextRequest) {
+  // One server clock reading for the whole request: the phone's clock is never asked.
+  const now = Date.now();
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Faltan datos de la foto" }, { status: 400 });
@@ -69,18 +79,38 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  const bonus = challenge?.isBonus ?? false;
+  // A late bonus upload got in on the grace period: it started before the close, so it still scores.
+  let late = false;
+  if (bonus) {
+    const { settings, eventEnd } = await getBonusState(now);
+    const ticketIssuedAt = readBonusTicket(body.bonusTicket, instagram, process.env.HOST_SECRET ?? "");
+    const window = checkBonusWindow(settings, eventEnd, now, ticketIssuedAt);
+    if (!window.ok) {
+      return window.hidden
+        ? NextResponse.json({ error: window.error }, { status: 400 })
+        : NextResponse.json({ error: window.error, code: "BONUS_CLOSED" }, { status: 403 });
+    }
+    late = window.late;
+  }
+
   // Uploads stay open after the game closes, but those photos are keepsakes: no points, no ranking.
-  const postDeadline = hasEventEnded();
-  // Challenge photos and free photos are capped separately, before and after the close alike.
-  const max = free ? MAX_FREE_PHOTOS_PER_USER : MAX_PHOTOS_PER_USER;
-  const sameKind = free ? FREE_PHOTO.id : { not: FREE_PHOTO.id };
+  const postDeadline = hasEventEnded(now) && !late;
+  // Challenge, free and bonus photos are capped separately, before and after the close alike.
+  const kind: PhotoKind = free ? "free" : bonus ? "bonus" : "challenge";
+  const max = PHOTO_LIMITS[kind];
 
   try {
     // Serializable so two concurrent uploads from the same user can't both pass the limit check.
     const { photo, count } = await prisma.$transaction(
       async (tx) => {
-        const existing = await tx.photo.count({ where: { instagram, challengeId: sameKind } });
-        if (existing >= max) throw new LimitReachedError();
+        const existing = await tx.photo.findMany({
+          where: { instagram },
+          select: { challengeId: true, isBonus: true },
+        });
+        const rejected = quotaError(kind, challenge?.id ?? FREE_PHOTO.id, existing);
+        if (rejected) throw new QuotaError(rejected.error, rejected.limit);
         const photo = await tx.photo.create({
           data: {
             url,
@@ -88,11 +118,13 @@ export async function POST(request: NextRequest) {
             type,
             instagram,
             challengeId: challenge?.id ?? FREE_PHOTO.id,
-            challengePoints: postDeadline ? 0 : (challenge?.points ?? 0),
+            // Snapshot with the multiplier applied, so the ranking and the host's discount use it as is.
+            challengePoints: postDeadline || !challenge ? 0 : effectivePoints(challenge),
             postDeadline,
+            isBonus: bonus,
           },
         });
-        return { photo, count: existing + 1 };
+        return { photo, count: tallyPhotos(existing)[kind] + 1 };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
@@ -100,14 +132,10 @@ export async function POST(request: NextRequest) {
     // `remaining` is always for the kind just uploaded.
     return NextResponse.json({ photo, remaining: max - count }, { status: 201 });
   } catch (err) {
-    if (err instanceof LimitReachedError) {
+    if (err instanceof QuotaError) {
       return NextResponse.json(
-        {
-          error: free
-            ? `Ya subiste tus ${MAX_FREE_PHOTOS_PER_USER} fotos libres`
-            : `Ya subiste tus ${MAX_PHOTOS_PER_USER} fotos de consignas`,
-          remaining: 0,
-        },
+        // `remaining: 0` tells the app this kind is used up; a repeated bonus challenge isn't.
+        { error: err.message, ...(err.limit ? { remaining: 0 } : { code: "BONUS_REPEAT" }) },
         { status: 409 }
       );
     }

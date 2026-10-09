@@ -8,18 +8,24 @@ import {
 
 const PUBLIC_FIELDS = { id: true, label: true, points: true } as const;
 
-/** The challenges guests can pick, in the order the host set. */
-export function listChallenges(): Promise<Challenge[]> {
+/**
+ * The challenges guests can pick, in the order the host set. Bonus track ones are a separate list
+ * (`bonus: true`), with their base points: they're secret until the window opens, so never mix them in.
+ */
+export function listChallenges({ bonus = false }: { bonus?: boolean } = {}): Promise<Challenge[]> {
   return prisma.challenge.findMany({
-    where: { retired: false },
+    where: { retired: false, isBonus: bonus },
     orderBy: { position: "asc" },
     select: PUBLIC_FIELDS,
   });
 }
 
-/** Only a challenge that can still be picked for a new upload. */
-export function getActiveChallenge(id: string): Promise<Challenge | null> {
-  return prisma.challenge.findFirst({ where: { id, retired: false }, select: PUBLIC_FIELDS });
+/** Only a challenge that can still be picked for a new upload. `points` is the base, before any multiplier. */
+export function getActiveChallenge(id: string): Promise<(Challenge & { isBonus: boolean }) | null> {
+  return prisma.challenge.findFirst({
+    where: { id, retired: false },
+    select: { ...PUBLIC_FIELDS, isBonus: true },
+  });
 }
 
 /** Label for every id a stored photo may reference, retired challenges and "Foto libre" included. */
