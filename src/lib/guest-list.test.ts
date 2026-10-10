@@ -1,11 +1,23 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { enteredGuests, guestListResult, type GuestListDeps, type GuestTrace } from "./guest-list.ts";
+import {
+  enteredGuests,
+  guestListResult,
+  type AllowedGuest,
+  type GuestListDeps,
+  type GuestTrace,
+} from "./guest-list.ts";
+import { checkInGuest, type EntryStore } from "./entry.ts";
 import { instagramProfileUrl, NOT_INVITED } from "./instagram.ts";
 
 const at = (iso: string) => new Date(iso);
 
-const ALLOWED = ["ana", "beto", "caro", "dani", "nunca.entro"];
+const ALLOWED = ["ana", "beto", "caro", "dani", "nunca.entro", "solo.entro"];
+/** Guest-list rows: "solo.entro" opened the app (firstEnteredAt) but never uploaded, liked or asked. */
+const GUESTS: AllowedGuest[] = ALLOWED.map((handle) => ({
+  handle,
+  firstEnteredAt: handle === "solo.entro" ? at("2026-10-11T00:00:00-03:00") : null,
+}));
 const TRACES: GuestTrace[] = [
   { handle: "ana", at: at("2026-10-10T23:10:00-03:00") },
   { handle: "beto", at: at("2026-10-10T23:40:00-03:00") },
@@ -20,7 +32,7 @@ function deps(overrides: Partial<GuestListDeps> = {}) {
   const d: GuestListDeps = {
     isInvited: async (h) => ALLOWED.includes(h),
     traces: async () => (calls.traces++, TRACES),
-    allowedHandles: async () => (calls.allowed++, ALLOWED),
+    allowedGuests: async () => (calls.allowed++, GUESTS),
     ...overrides,
   };
   return { deps: d, calls };
@@ -52,7 +64,7 @@ describe("guestListResult: session", () => {
   it("200 for an invited guest, normalizing the handle like the other routes", async () => {
     const res = await guestListResult("@Ana ", deps().deps, NOT_INVITED);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { handles: ["caro", "beto", "ana"] });
+    assert.deepEqual(res.body, { handles: ["caro", "solo.entro", "beto", "ana"] });
   });
 });
 
@@ -72,15 +84,47 @@ describe("guestListResult: what it exposes", () => {
   });
 });
 
+const guests = (entries: Record<string, string> = {}): AllowedGuest[] =>
+  ALLOWED.map((handle) => ({ handle, firstEnteredAt: entries[handle] ? at(entries[handle]) : null }));
+
 describe("enteredGuests", () => {
-  const allowed = new Set(ALLOWED);
+  const allowed = guests();
 
   it("newest first by first trace, one row per guest", () => {
     assert.deepEqual(enteredGuests(TRACES, allowed), ["caro", "beto", "ana"]);
   });
 
-  it("empty when nobody left a trace", () => {
+  it("empty when nobody came in or left a trace", () => {
     assert.deepEqual(enteredGuests([], allowed), []);
+  });
+
+  it("includes a guest who only came in, with no photo, like or request", () => {
+    const list = enteredGuests([], guests({ dani: "2026-10-10T23:00:00-03:00" }));
+    assert.deepEqual(list, ["dani"]);
+  });
+
+  it("doesn't include a guest who never came in", () => {
+    const list = enteredGuests(TRACES, guests({ dani: "2026-10-10T23:00:00-03:00" }));
+    assert.ok(!list.includes("nunca.entro"));
+    assert.ok(!list.includes("solo.entro"));
+  });
+
+  it("guests from before firstEnteredAt existed still show, by their traces", () => {
+    // Ana and Beto came in before the migration: their firstEnteredAt is null.
+    const list = enteredGuests(TRACES, guests({ dani: "2026-10-11T02:00:00-03:00" }));
+    assert.deepEqual(list, ["dani", "caro", "beto", "ana"]);
+  });
+
+  it("orders by the earliest date available: a later firstEnteredAt doesn't move an earlier trace", () => {
+    // Ana's first photo was 23:10; her firstEnteredAt got set after the deploy, at 02:30.
+    const list = enteredGuests(TRACES, guests({ ana: "2026-10-11T02:30:00-03:00" }));
+    assert.deepEqual(list, ["caro", "beto", "ana"]);
+  });
+
+  it("and an earlier firstEnteredAt wins over a later trace", () => {
+    // Beto came in at 22:00 and liked his first photo at 23:40.
+    const list = enteredGuests(TRACES, guests({ beto: "2026-10-10T22:00:00-03:00" }));
+    assert.deepEqual(list, ["caro", "ana", "beto"]);
   });
 
   it("drops handles removed from the guest list (old photos and likes stay in the DB)", () => {
@@ -90,8 +134,10 @@ describe("enteredGuests", () => {
 
   it("drops anything that isn't a valid handle, even if it got into the data", () => {
     const bad = ['x"><script>', "javascript:alert(1)", "a/../b", "UPPER", "a".repeat(31), ""];
-    const traces = bad.map((handle) => ({ handle, at: at("2026-10-11T02:00:00-03:00") }));
-    assert.deepEqual(enteredGuests(traces, new Set(bad)), []);
+    const t = at("2026-10-11T02:00:00-03:00");
+    const traces = bad.map((handle) => ({ handle, at: t }));
+    const rows = bad.map((handle) => ({ handle, firstEnteredAt: t }));
+    assert.deepEqual(enteredGuests(traces, rows), []);
   });
 
   it("same timestamp: alphabetical, so the order doesn't jump between refreshes", () => {
@@ -128,5 +174,66 @@ describe("instagramProfileUrl", () => {
 
   it("accepts the 30-character limit", () => {
     assert.equal(instagramProfileUrl("a".repeat(30)), `https://www.instagram.com/${"a".repeat(30)}/`);
+  });
+});
+
+/** In-memory guest list that applies the update the way the SQL does: only where it's still null. */
+function fakeStore(handles: string[]) {
+  const rows = new Map(handles.map((h) => [h, { firstEnteredAt: null as Date | null }]));
+  const writes: string[] = [];
+  const store: EntryStore = {
+    find: async (h) => {
+      const row = rows.get(h);
+      return row ? { ...row } : null;
+    },
+    setFirstEnteredIfUnset: async (h, when) => {
+      writes.push(h);
+      const row = rows.get(h);
+      if (row && row.firstEnteredAt === null) row.firstEnteredAt = when;
+    },
+  };
+  return { store, rows, writes };
+}
+
+describe("checkInGuest: firstEnteredAt", () => {
+  const T1 = at("2026-10-10T23:00:00-03:00");
+  const T2 = at("2026-10-11T01:00:00-03:00");
+
+  it("set on the first successful check", async () => {
+    const { store, rows } = fakeStore(["ana"]);
+    assert.equal(await checkInGuest("ana", store, T1), true);
+    assert.deepEqual(rows.get("ana")?.firstEnteredAt, T1);
+  });
+
+  it("set only once: later checks don't overwrite it, and don't write at all", async () => {
+    const { store, rows, writes } = fakeStore(["ana"]);
+    await checkInGuest("ana", store, T1);
+    await checkInGuest("ana", store, T2);
+    await checkInGuest("ana", store, T2);
+    assert.deepEqual(rows.get("ana")?.firstEnteredAt, T1);
+    assert.deepEqual(writes, ["ana"]);
+  });
+
+  it("two requests racing on the first open: the first write stays", async () => {
+    const { store, rows } = fakeStore(["ana"]);
+    // Both read null before either writes.
+    await Promise.all([checkInGuest("ana", store, T1), checkInGuest("ana", store, T2)]);
+    assert.deepEqual(rows.get("ana")?.firstEnteredAt, T1);
+  });
+
+  it("not on the guest list: false, and nothing is written", async () => {
+    const { store, writes } = fakeStore(["ana"]);
+    assert.equal(await checkInGuest("colado", store, T1), false);
+    assert.deepEqual(writes, []);
+  });
+
+  it("a guest who was checked in shows up in the list; one who wasn't doesn't", async () => {
+    const { store, rows } = fakeStore(["ana", "beto"]);
+    await checkInGuest("ana", store, T1);
+    const list = enteredGuests(
+      [],
+      [...rows].map(([handle, r]) => ({ handle, firstEnteredAt: r.firstEnteredAt }))
+    );
+    assert.deepEqual(list, ["ana"]);
   });
 });

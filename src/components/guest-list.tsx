@@ -113,7 +113,7 @@ export function GuestList({ handles, error }: { handles: string[] | undefined; e
           </ul>
         )
       ) : handles.length === 0 ? (
-        <EmptyState icon={Users} title="Todavía no entró nadie" text="Apenas alguien suba o likee una foto, aparece acá." />
+        <EmptyState icon={Users} title="Todavía no entró nadie" text="Apenas alguien entre a Reelio, aparece acá." />
       ) : visible!.length === 0 ? (
         <EmptyState icon={SearchX} title="Sin resultados" text={`Nadie que haya entrado tiene "${q}" en su usuario.`} />
       ) : (

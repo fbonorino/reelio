@@ -97,10 +97,13 @@ model Like {
 
 /// Guest list: only these handles can upload photos and give likes. Managed from /host.
 model AllowedHandle {
-  id        String   @id @default(cuid())
+  id             String    @id @default(cuid())
   /// Normalized Instagram handle (lowercase, no "@"), same format as Photo.instagram.
-  handle    String   @unique
-  createdAt DateTime @default(now())
+  handle         String    @unique
+  createdAt      DateTime  @default(now())
+  /// First time the server confirmed this guest's saved handle (their first /api/quota after onboarding).
+  /// Set once, never overwritten. Null for anyone who hasn't come in since it was added.
+  firstEnteredAt DateTime?
 }
 
 enum AccessRequestStatus {

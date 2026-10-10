@@ -30,7 +30,7 @@ const TITLES: Record<Panel, { title: string; description: string }> = {
 };
 
 /**
- * Narrow icon rail fixed to the right edge, opening rules / challenges / guests in a slide-over.
+ * Narrow icon rail fixed to the left edge, opening rules / challenges / guests in a slide-over from that side.
  * `onPickChallenge` adds a "Subir esta" button per challenge; omit it when uploading isn't possible.
  */
 export function InfoRail({
@@ -49,8 +49,10 @@ export function InfoRail({
 
   return (
     <>
-      {/* Lower third: reachable one-handed, and above the centered "Subir consigna" button. */}
-      <nav className="fixed bottom-[calc(10rem+env(safe-area-inset-bottom))] right-[env(safe-area-inset-right)] z-40 flex flex-col gap-1 rounded-l-2xl border border-r-0 border-zinc-700 bg-zinc-900/85 p-1 shadow-lg shadow-black/40 backdrop-blur">
+      {/* Lower third: reachable one-handed, and above the centered "Subir consigna" button. On the left
+          edge because each card's like button sits at its bottom-right: on the right, the rail covered
+          the right-hand card's like at some scroll position on every phone width. */}
+      <nav className="fixed bottom-[calc(10rem+env(safe-area-inset-bottom))] left-[env(safe-area-inset-left)] z-40 flex flex-col gap-1 rounded-r-2xl border border-l-0 border-zinc-700 bg-zinc-900/85 p-1 shadow-lg shadow-black/40 backdrop-blur">
         {BUTTONS.map(({ panel: p, icon: Icon, label }) => (
           <button
             key={p}
@@ -69,6 +71,7 @@ export function InfoRail({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           ref={contentRef}
+          side="left"
           // The guests panel opens with its search box first: focusing it would pop the keyboard on phones.
           onOpenAutoFocus={(e) => {
             if (panel !== "guests") return;

@@ -4,7 +4,10 @@ import { NOT_INVITED } from "@/lib/instagram";
 import { isInvited } from "@/lib/guests";
 import { guestListResult, type GuestTrace } from "@/lib/guest-list";
 
-/** Each guest's first photo, first like and approved access request: what counts as having got in. */
+/**
+ * Each guest's first photo, first like and approved access request. Together with firstEnteredAt,
+ * what counts as having got in: these cover whoever came in before firstEnteredAt was recorded.
+ */
 async function traces(): Promise<GuestTrace[]> {
   const [photos, likes, approved] = await Promise.all([
     prisma.photo.groupBy({ by: ["instagram"], _min: { createdAt: true } }),
@@ -20,9 +23,8 @@ async function traces(): Promise<GuestTrace[]> {
   return [...firsts, ...approved.map((r) => ({ handle: r.handle, at: r.createdAt }))];
 }
 
-async function allowedHandles() {
-  const rows = await prisma.allowedHandle.findMany({ select: { handle: true } });
-  return rows.map((r) => r.handle);
+function allowedGuests() {
+  return prisma.allowedHandle.findMany({ select: { handle: true, firstEnteredAt: true } });
 }
 
 /**
@@ -32,7 +34,7 @@ async function allowedHandles() {
 export async function GET(request: NextRequest) {
   const { status, body } = await guestListResult(
     request.nextUrl.searchParams.get("instagram"),
-    { isInvited, traces, allowedHandles },
+    { isInvited, traces, allowedGuests },
     NOT_INVITED
   );
   return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
