@@ -11,6 +11,7 @@ import {
   RefreshCw,
   RotateCcw,
   Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ import { useBonusChallenges, useChallenges } from "@/hooks/use-challenges";
 import { useEventStatus } from "@/hooks/use-event-status";
 import type { Quota } from "@/hooks/use-quota";
 import { forgetIfNotInvited } from "@/lib/profile";
+import { API_TIMEOUT_MS, fetchWithTimeout, fileSizeError, toUploadError } from "@/lib/upload-rules";
+import { beginUploadActivity } from "@/lib/upload-activity";
 import { cn } from "@/lib/utils";
 
 export type UploadFlowHandle = {
@@ -93,6 +96,8 @@ export function UploadFlow({
   const returnFocusRef = useRef<HTMLElement | null>(null);
   // A retry after Cloudinary succeeded but saving failed reuses the upload instead of orphaning a copy.
   const uploadedRef = useRef<{ file: File; result: CloudinaryUploadResult } | null>(null);
+  // The upload in flight, so Cancelar (or closing the app's view of it) can stop it.
+  const abortRef = useRef<AbortController | null>(null);
 
   const [open, setOpen] = useState(false);
   const [currentStep, setStep] = useState<Step>("challenge");
@@ -128,6 +133,9 @@ export function UploadFlow({
     if (bonusRemaining === 0) return `Ya usaste tus ${BONUS_EXTRA_PHOTOS} fotos bonus`;
     return undefined;
   }
+
+  // Nothing keeps uploading in the background once this goes away.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Android's Back closes the flow instead of leaving the app; mid-upload it does nothing.
   useBackToClose(open, () => setOpen(false), { dismissible: !uploading });
@@ -174,19 +182,29 @@ export function UploadFlow({
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
-    setError(null);
+    // Over the plan's limit: say so now, before anything goes out, instead of failing after the wait.
+    const tooBig = fileSizeError(selected);
+    setError(tooBig ? { message: tooBig, retryable: false } : null);
     setProgress(0);
     setStep("review");
   }
 
   async function handleSubmit() {
-    if (!file || !challengeId || !instagram) return;
+    if (!file || !challengeId || !instagram || fileSizeError(file)) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // The feed and ranking stop polling meanwhile, leaving the signal to the photo.
+    const endActivity = beginUploadActivity();
     setUploading(true);
     setError(null);
     setProgress(0);
     try {
       // Check the guest list and quota first, so a rejected upload doesn't leave an orphan in Cloudinary.
-      const quotaRes = await fetch(`/api/quota?instagram=${encodeURIComponent(instagram)}`);
+      const quotaRes = await fetchWithTimeout(
+        `/api/quota?instagram=${encodeURIComponent(instagram)}`,
+        { signal: controller.signal },
+        API_TIMEOUT_MS
+      );
       const quota = await quotaRes.json().catch(() => null);
       if (!quotaRes.ok) {
         if (forgetIfNotInvited(quota)) {
@@ -216,15 +234,22 @@ export function UploadFlow({
       if (uploaded) {
         setProgress(100);
       } else {
-        uploaded = await uploadToCloudinary(file, setProgress);
+        uploaded = await uploadToCloudinary(file, setProgress, { signal: controller.signal });
         uploadedRef.current = { file, result: uploaded };
       }
 
-      const res = await fetch("/api/photos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...uploaded, instagram, challengeId, bonusTicket }),
-      });
+      // If the answer gets lost, Reintentar sends the same upload again and the server returns
+      // the photo it already saved instead of a copy.
+      const res = await fetchWithTimeout(
+        "/api/photos",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...uploaded, instagram, challengeId, bonusTicket }),
+          signal: controller.signal,
+        },
+        API_TIMEOUT_MS
+      );
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         if (forgetIfNotInvited(data)) {
@@ -267,11 +292,12 @@ export function UploadFlow({
       onUploaded();
       setOpen(false);
     } catch (err) {
-      setError({
-        message: err instanceof Error ? err.message : "Falló la subida",
-        retryable: true,
-      });
+      // "Load failed" / "Failed to fetch", timeouts and Cancelar all come out as a message in Spanish.
+      const failure = toUploadError(err, { cancelled: controller.signal.aborted });
+      setError({ message: failure.message, retryable: failure.retryable });
     } finally {
+      endActivity();
+      if (abortRef.current === controller) abortRef.current = null;
       setUploading(false);
     }
   }
@@ -347,28 +373,58 @@ export function UploadFlow({
         }
         footer={
           step === "review" && (
-            <Button
-              onClick={handleSubmit}
-              disabled={uploading || !file || !pick || (error !== null && !error.retryable)}
-              className="h-12 w-full rounded-xl bg-indigo-600 text-base font-semibold text-white hover:bg-indigo-500"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="size-5 animate-spin" />
-                  {progress < 100 ? `Subiendo ${progress}%` : "Guardando…"}
-                </>
-              ) : error?.retryable ? (
-                <>
-                  <RotateCcw className="size-5" />
-                  Reintentar
-                </>
-              ) : (
-                <>
-                  <Upload className="size-5" />
-                  Subir
-                </>
+            <div className="grid gap-3">
+              {/* In the pinned footer, so even on a small phone it's never hidden below the preview. */}
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-lg bg-rose-500/10 px-3 py-2.5 text-sm text-rose-100 ring-1 ring-rose-500/50"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-400" />
+                  <div>
+                    <p className="font-medium">{error.message}</p>
+                    {error.retryable && (
+                      <p className="text-rose-200/80">Tu foto y la consigna siguen acá: probá de nuevo.</p>
+                    )}
+                  </div>
+                </div>
               )}
-            </Button>
+              <div className="flex gap-2">
+                {/* Mid-upload the sheet can't be swiped away, so this is always a way out. */}
+                {uploading && (
+                  <Button
+                    variant="outline"
+                    onClick={() => abortRef.current?.abort()}
+                    className="h-12 shrink-0 rounded-xl border-zinc-700 bg-zinc-950 px-4 text-base text-zinc-200"
+                  >
+                    <X className="size-5" />
+                    Cancelar
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={uploading || !file || !pick || (error !== null && !error.retryable)}
+                  className="h-12 min-w-0 flex-1 rounded-xl bg-indigo-600 text-base font-semibold text-white hover:bg-indigo-500"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="size-5 animate-spin" />
+                      {progress < 100 ? `Subiendo ${progress}%` : "Guardando…"}
+                    </>
+                  ) : error?.retryable ? (
+                    <>
+                      <RotateCcw className="size-5" />
+                      Reintentar
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="size-5" />
+                      Subir
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           )
         }
       >
@@ -545,21 +601,6 @@ export function UploadFlow({
                   className="h-full bg-indigo-500 transition-all"
                   style={{ width: `${progress}%` }}
                 />
-              </div>
-            )}
-
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-lg bg-rose-500/10 px-3 py-2.5 text-sm text-rose-100 ring-1 ring-rose-500/50"
-              >
-                <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-400" />
-                <div>
-                  <p className="font-medium">{error.message}</p>
-                  {error.retryable && (
-                    <p className="text-rose-200/80">Tu foto y la consigna siguen acá: probá de nuevo.</p>
-                  )}
-                </div>
               </div>
             )}
           </div>

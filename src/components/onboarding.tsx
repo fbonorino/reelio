@@ -133,7 +133,7 @@ export function Onboarding({ open }: { open: boolean }) {
                 Las consignas
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Andá pensando cuáles vas a hacer. Las tenés siempre a mano en la barra de la derecha.
+                Andá pensando cuáles vas a hacer. Las tenés siempre a mano en la barra de la izquierda.
               </DialogDescription>
             </DialogHeader>
             <ChallengeList />

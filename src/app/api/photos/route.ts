@@ -9,7 +9,9 @@ import { isInvited, notInvitedResponse } from "@/lib/guests";
 import { checkBonusWindow, effectivePoints } from "@/lib/bonus";
 import { getBonusState } from "@/lib/bonus-db";
 import { readBonusTicket } from "@/lib/bonus-ticket";
-import { PHOTO_LIMITS, quotaError, tallyPhotos, type PhotoKind } from "@/lib/quota";
+import { existingUpload, PHOTO_LIMITS, photoKind, quotaError, tallyPhotos, type PhotoKind } from "@/lib/quota";
+import { isOwnCloudinaryUrl } from "@/lib/asset-url";
+import { withSerializableRetry } from "@/lib/serializable-retry";
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort");
@@ -67,6 +69,11 @@ export async function POST(request: NextRequest) {
   if (type !== "IMAGE" && type !== "VIDEO") {
     return NextResponse.json({ error: "Tipo de archivo inválido" }, { status: 400 });
   }
+  // Only our own Cloudinary uploads: the feed, the host panel and the export all load these URLs.
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  if (!isOwnCloudinaryUrl(url, cloudName, type) || !isOwnCloudinaryUrl(thumbnailUrl, cloudName, type)) {
+    return NextResponse.json({ error: "La foto no viene de nuestra subida, probá de nuevo" }, { status: 400 });
+  }
   if (!instagram) {
     return NextResponse.json({ error: "Usuario de Instagram inválido" }, { status: 400 });
   }
@@ -99,16 +106,22 @@ export async function POST(request: NextRequest) {
   const postDeadline = hasEventEnded(now) && !late;
   // Challenge, free and bonus photos are capped separately, before and after the close alike.
   const kind: PhotoKind = free ? "free" : bonus ? "bonus" : "challenge";
-  const max = PHOTO_LIMITS[kind];
 
   try {
-    // Serializable so two concurrent uploads from the same user can't both pass the limit check.
-    const { photo, count } = await prisma.$transaction(
+    // Serializable so two concurrent uploads from the same user can't both pass the limit check;
+    // retried when uploads from different guests collide (see withSerializableRetry).
+    const { photo, count, duplicate } = await withSerializableRetry(() => prisma.$transaction(
       async (tx) => {
         const existing = await tx.photo.findMany({
           where: { instagram },
-          select: { challengeId: true, isBonus: true },
+          select: { id: true, url: true, challengeId: true, isBonus: true },
         });
+        // A retry of a save whose answer got lost: hand back the first one instead of a copy.
+        const saved = existingUpload(existing, url);
+        if (saved) {
+          const photo = await tx.photo.findUniqueOrThrow({ where: { id: saved.id } });
+          return { photo, count: tallyPhotos(existing)[photoKind(photo)], duplicate: true };
+        }
         const rejected = quotaError(kind, challenge?.id ?? FREE_PHOTO.id, existing);
         if (rejected) throw new QuotaError(rejected.error, rejected.limit);
         const photo = await tx.photo.create({
@@ -124,13 +137,14 @@ export async function POST(request: NextRequest) {
             isBonus: bonus,
           },
         });
-        return { photo, count: tallyPhotos(existing)[kind] + 1 };
+        return { photo, count: tallyPhotos(existing)[kind] + 1, duplicate: false };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-    );
+    ));
 
     // `remaining` is always for the kind just uploaded.
-    return NextResponse.json({ photo, remaining: max - count }, { status: 201 });
+    const remaining = PHOTO_LIMITS[duplicate ? photoKind(photo) : kind] - count;
+    return NextResponse.json({ photo, remaining }, { status: duplicate ? 200 : 201 });
   } catch (err) {
     if (err instanceof QuotaError) {
       return NextResponse.json(

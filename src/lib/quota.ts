@@ -25,6 +25,15 @@ export function tallyPhotos(photos: StoredPhoto[]): Record<PhotoKind, number> {
 }
 
 /**
+ * The guest's photo already saved with this Cloudinary `url`, if any. Saving is retried with the same
+ * upload when the answer gets lost on a bad signal: that retry must return the first save, not
+ * create a second photo that eats another slot.
+ */
+export function existingUpload<P extends { url: string }>(photos: P[], url: string): P | undefined {
+  return photos.find((p) => p.url === url);
+}
+
+/**
  * Why a guest with `photos` can't upload one more for `challengeId` (of `kind`), or null if they can.
  * `limit: true` means they're out of room for that kind altogether.
  */
