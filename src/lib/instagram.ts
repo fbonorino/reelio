@@ -26,3 +26,11 @@ export function normalizeInstagram(raw: unknown): string | null {
 export function instagramUrl(handle: string) {
   return `https://instagram.com/${encodeURIComponent(handle)}`;
 }
+
+/**
+ * Canonical profile URL, the form Instagram's app claims as a universal link on phones. Null unless
+ * `handle` is already a valid normalized handle: never builds a URL from anything else.
+ */
+export function instagramProfileUrl(handle: string): string | null {
+  return HANDLE_PATTERN.test(handle) ? `https://www.instagram.com/${handle}/` : null;
+}

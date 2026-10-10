@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Info, ListChecks } from "lucide-react";
+import { useRef, useState } from "react";
+import { Info, ListChecks, Users } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,16 +11,26 @@ import {
 } from "@/components/ui/sheet";
 import { ChallengeList, type Pickable } from "@/components/challenge-list";
 import { GameRules } from "@/components/game-rules";
+import { GuestList } from "@/components/guest-list";
+import { useGuests } from "@/hooks/use-guests";
+import { useInstagram } from "@/lib/profile";
 
-type Panel = "rules" | "challenges";
+type Panel = "rules" | "challenges" | "guests";
 
 const BUTTONS = [
   { panel: "rules", icon: Info, label: "Cómo se juega" },
   { panel: "challenges", icon: ListChecks, label: "Consignas" },
+  { panel: "guests", icon: Users, label: "Invitados" },
 ] as const;
 
+const TITLES: Record<Panel, { title: string; description: string }> = {
+  rules: { title: "Cómo se juega", description: "Reglas del juego" },
+  challenges: { title: "Consignas", description: "Las consignas del juego" },
+  guests: { title: "Invitados", description: "Los invitados que ya entraron a Reelio" },
+};
+
 /**
- * Narrow icon rail fixed to the right edge, opening rules / challenges in a slide-over.
+ * Narrow icon rail fixed to the right edge, opening rules / challenges / guests in a slide-over.
  * `onPickChallenge` adds a "Subir esta" button per challenge; omit it when uploading isn't possible.
  */
 export function InfoRail({
@@ -33,6 +43,9 @@ export function InfoRail({
   const [open, setOpen] = useState(false);
   // Kept after closing so the content doesn't swap during the exit animation.
   const [panel, setPanel] = useState<Panel>("rules");
+  const instagram = useInstagram();
+  const guests = useGuests(instagram, open && panel === "guests");
+  const contentRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
@@ -54,25 +67,32 @@ export function InfoRail({
       </nav>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="w-[88%] gap-0 border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md">
-          {panel === "rules" ? (
-            <SheetHeader className="pr-14 pt-[max(1rem,env(safe-area-inset-top))]">
+        <SheetContent
+          ref={contentRef}
+          // The guests panel opens with its search box first: focusing it would pop the keyboard on phones.
+          onOpenAutoFocus={(e) => {
+            if (panel !== "guests") return;
+            e.preventDefault();
+            contentRef.current?.focus();
+          }}
+          className="w-[88%] gap-0 border-zinc-800 bg-zinc-900 text-zinc-100 outline-none sm:max-w-md"
+        >
+          <SheetHeader className="pr-14 pt-[max(1rem,env(safe-area-inset-top))]">
+            <div className="flex items-baseline gap-3">
               <SheetTitle className="font-display text-2xl uppercase tracking-wide text-zinc-50">
-                Cómo se juega
+                {TITLES[panel].title}
               </SheetTitle>
-              <SheetDescription className="sr-only">Reglas del juego</SheetDescription>
-            </SheetHeader>
-          ) : (
-            <SheetHeader className="pr-14 pt-[max(1rem,env(safe-area-inset-top))]">
-              <SheetTitle className="font-display text-2xl uppercase tracking-wide text-zinc-50">
-                Consignas
-              </SheetTitle>
-              <SheetDescription className="sr-only">Las consignas del juego</SheetDescription>
-            </SheetHeader>
-          )}
+              {panel === "guests" && guests.data && (
+                <span className="text-sm tabular-nums text-zinc-400">{guests.data.length} adentro</span>
+              )}
+            </div>
+            <SheetDescription className="sr-only">{TITLES[panel].description}</SheetDescription>
+          </SheetHeader>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
             {panel === "rules" ? (
               <GameRules />
+            ) : panel === "guests" ? (
+              <GuestList handles={guests.data} error={!!guests.error} />
             ) : (
               <ChallengeList
                 pickable={pickable}
