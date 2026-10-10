@@ -33,7 +33,10 @@ export type BonusSettings = {
   override: BonusOverride;
   /** When `override` last changed. */
   overrideAt: Date | null;
-  /** First time the host forced it open: the challenges are public from then on. */
+  /**
+   * First time the host forced it open. Only matters while forced closed: a close right after a
+   * forced open keeps the challenges visible (disabled) instead of hiding them again.
+   */
   revealedAt: Date | null;
 };
 
@@ -52,11 +55,15 @@ export function bonusEndsAt(settings: BonusSettings, eventEnd: Date | null): Dat
 
 export function bonusPhase(settings: BonusSettings, eventEnd: Date | null, now: number): BonusPhase {
   const gameOver = eventEnd !== null && now >= eventEnd.getTime();
+  const beforeWindow = now < settings.startsAt.getTime();
   if (settings.override === "OPEN" && !gameOver) return "open";
-  // Secret until it opens on schedule or the host forces it open, whatever else happened.
-  const revealed = now >= settings.startsAt.getTime() || settings.revealedAt !== null;
-  if (!revealed) return "before";
-  if (settings.override === "CLOSED" || gameOver) return "closed";
+  if (settings.override === "CLOSED") {
+    // Secret until 3:00 unless the host had already opened it by hand.
+    return beforeWindow && settings.revealedAt === null ? "before" : "closed";
+  }
+  // Automatic: the clock and the window alone, whatever overrides came before.
+  if (beforeWindow) return "before";
+  if (gameOver) return "closed";
   return now < bonusEndsAt(settings, eventEnd).getTime() ? "open" : "closed";
 }
 

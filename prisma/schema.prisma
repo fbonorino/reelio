@@ -74,8 +74,8 @@ model EventSettings {
   bonusOverride   BonusOverride @default(AUTO)
   /// When bonusOverride last changed: a forced close starts the upload grace period from here.
   bonusOverrideAt DateTime?
-  /// First time the host forced the window open. From then on the bonus challenges stay public, even
-  /// if it's forced closed again before bonusStartsAt.
+  /// First time the host forced the window open. Only matters while forced closed: closing it after a
+  /// forced open keeps the challenges visible (disabled). Back on AUTO, only the clock counts.
   bonusRevealedAt DateTime?
   updatedAt       DateTime      @updatedAt
 }

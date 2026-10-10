@@ -105,6 +105,29 @@ describe("manual override", () => {
     assert.equal(bonusPhase(s, EVENT_END, earlier + 6000), "closed");
   });
 
+  describe("back to automatic: only the clock and the window count", () => {
+    for (const [previous, s] of [
+      ["after a forced open", settings({ override: "AUTO", overrideAt: new Date(earlier + 5000), revealedAt: new Date(earlier) })],
+      ["after a forced close", settings({ override: "AUTO", overrideAt: new Date(earlier + 5000) })],
+      ["after a forced open and then a forced close", settings({ override: "AUTO", overrideAt: new Date(earlier + 9000), revealedAt: new Date(earlier) })],
+    ] as const) {
+      it(`${previous}: before the window it's "before" (secret again)`, () => {
+        assert.equal(bonusPhase(s, EVENT_END, earlier + 10_000), "before");
+        assert.equal(bonusPhase(s, EVENT_END, START - 1), "before");
+        assert.equal(guestChallenges([], [{ id: "b", label: "secreta", points: 15 }], bonusPhase(s, EVENT_END, START - 1)).bonus.length, 0);
+        assert.equal(checkBonusWindow(s, EVENT_END, START - 1, null).ok, false);
+      });
+      it(`${previous}: during the window it's open`, () => {
+        assert.equal(bonusPhase(s, EVENT_END, START), "open");
+        assert.equal(bonusPhase(s, EVENT_END, END - 1), "open");
+      });
+      it(`${previous}: after the window it's closed`, () => {
+        assert.equal(bonusPhase(s, EVENT_END, END), "closed");
+        assert.equal(bonusPhase(s, EVENT_END, END + 3_600_000), "closed");
+      });
+    }
+  });
+
   it("back to automatic: follows the schedule again", () => {
     const s = settings({ override: "AUTO", revealedAt: new Date(earlier) });
     assert.equal(bonusPhase(s, EVENT_END, START + 1), "open");

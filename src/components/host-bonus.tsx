@@ -33,7 +33,7 @@ const OVERRIDES: { value: BonusOverride; label: string }[] = [
 ];
 
 const CONFIRM: Partial<Record<BonusOverride, string>> = {
-  OPEN: "¿Abrir el bonus track ya? Las consignas bonus se vuelven públicas para todos y no se pueden volver a esconder.",
+  OPEN: "¿Abrir el bonus track ya? Las consignas bonus se vuelven públicas para todos. Volviendo a Automático antes de la hora se esconden de nuevo, pero las fotos que se suban quedan en el feed.",
   CLOSED: "¿Cerrar el bonus track ya? Las fotos bonus que estén subiéndose tienen 1 minuto para entrar.",
 };
 
@@ -156,7 +156,8 @@ function WindowForm({
       }}
       className="grid gap-2 border-t border-zinc-800 pt-3"
     >
-      <div className="grid grid-cols-2 gap-2">
+      {/* One per row on phones: a datetime-local needs ~250px to show the date and the time. */}
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="grid gap-1 text-xs text-zinc-400">
           Abre
           <Input
